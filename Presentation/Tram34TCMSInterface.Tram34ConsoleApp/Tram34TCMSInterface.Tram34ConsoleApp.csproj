@@ -18,4 +18,10 @@
     <ProjectReference Include="..\..\Infrastructure\Tram34TCMSInterface.Infrastructure\Tram34TCMSInterface.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

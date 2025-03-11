@@ -9,15 +9,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Infrastructure", "Infrastru
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Presentation", "Presentation", "{9539DDD3-ECDE-43AE-BB7C-E5C5E6E554AF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tram34TCMSInterface.Domain", "Core\Tram34TCMSInterface.Domain\Tram34TCMSInterface.Domain.csproj", "{F595F77B-E88D-4435-A8D6-DEE439CBBB62}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tram34TCMSInterface.Domain", "Core\Tram34TCMSInterface.Domain\Tram34TCMSInterface.Domain.csproj", "{F595F77B-E88D-4435-A8D6-DEE439CBBB62}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tram34TCMSInterface.Application", "Core\Tram34TCMSInterface.Application\Tram34TCMSInterface.Application.csproj", "{1B13CBD8-D58C-430A-B73D-97FB33B811ED}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tram34TCMSInterface.Application", "Core\Tram34TCMSInterface.Application\Tram34TCMSInterface.Application.csproj", "{1B13CBD8-D58C-430A-B73D-97FB33B811ED}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tram34TCMSInterface.Infrastructure", "Infrastructure\Tram34TCMSInterface.Infrastructure\Tram34TCMSInterface.Infrastructure.csproj", "{44251057-9745-4236-8E12-7520D27539A4}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tram34TCMSInterface.Infrastructure", "Infrastructure\Tram34TCMSInterface.Infrastructure\Tram34TCMSInterface.Infrastructure.csproj", "{44251057-9745-4236-8E12-7520D27539A4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tram34TCMSInterface.Persistence", "Infrastructure\Tram34TCMSInterface.Persistence\Tram34TCMSInterface.Persistence.csproj", "{F015051C-C731-48C2-ABF2-FB3549708831}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tram34TCMSInterface.Persistence", "Infrastructure\Tram34TCMSInterface.Persistence\Tram34TCMSInterface.Persistence.csproj", "{F015051C-C731-48C2-ABF2-FB3549708831}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tram34TCMSInterface.Tram34ConsoleApp", "Presentation\Tram34TCMSInterface.Tram34ConsoleApp\Tram34TCMSInterface.Tram34ConsoleApp.csproj", "{8B194604-0616-4C8F-A1FF-87B974954D21}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tram34TCMSInterface.Tram34ConsoleApp", "Presentation\Tram34TCMSInterface.Tram34ConsoleApp\Tram34TCMSInterface.Tram34ConsoleApp.csproj", "{8B194604-0616-4C8F-A1FF-87B974954D21}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

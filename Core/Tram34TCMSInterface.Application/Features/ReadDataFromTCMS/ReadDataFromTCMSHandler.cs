@@ -1,12 +1,13 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Configuration;
-using System.Net;
 using System.Text.Json;
 using Tram34TCMSInterface.Application.Abstractions.UDP;
+using Tram34TCMSInterface.Domain.Models;
+using static Tram34TCMSInterface.Domain.Models.JsonDocumentFormatUDP;
 
 namespace Tram34TCMSInterface.Application.Features.ReadDataFromTCMS
 {
-    public class ReadDataFromTCMSHandler : IRequestHandler<ReadDataFromTCMSCommand, JsonDocument>
+    public class ReadDataFromTCMSHandler : IRequestHandler<ReadDataFromTCMSCommand, TrainData?>
     {
         private readonly IReadDataFromTCMSWithUDP readDataFromTCMSWithUDP;
         private readonly IConfiguration configuration;
@@ -17,8 +18,8 @@ namespace Tram34TCMSInterface.Application.Features.ReadDataFromTCMS
         {
             this.readDataFromTCMSWithUDP = readDataFromTCMSWithUDP;
             this.configuration = configuration;
-            expectedIp = this.configuration["UDP:IPAddress"];
-            expectedPort = int.TryParse(this.configuration["UDP:Port"], out int port) ? port : 0;
+            expectedIp = this.configuration["UDP:Address"];
+            expectedPort = int.TryParse(this.configuration["UDP:SourcePort"], out int port) ? port : 0;
 
             if (string.IsNullOrWhiteSpace(expectedIp) || expectedPort == 0)
             {
@@ -26,9 +27,8 @@ namespace Tram34TCMSInterface.Application.Features.ReadDataFromTCMS
             }
         }
 
-        public async Task<JsonDocument?> Handle(ReadDataFromTCMSCommand request, CancellationToken cancellationToken)
-        {  
-
+        public async Task<TrainData> Handle(ReadDataFromTCMSCommand request, CancellationToken cancellationToken)
+        {
             var (buffer, senderEndPoint) = await readDataFromTCMSWithUDP.ReadDataFromTCMS();
 
             if (senderEndPoint.Address.ToString() == expectedIp && senderEndPoint.Port == expectedPort)
@@ -39,6 +39,7 @@ namespace Tram34TCMSInterface.Application.Features.ReadDataFromTCMS
                 {
                     return Result;
                 }
+                return null;
             }
 
             Console.WriteLine($"Beklenmeyen IP veya Port: {senderEndPoint.Address}:{senderEndPoint.Port}");
