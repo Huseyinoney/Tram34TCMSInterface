@@ -1,11 +1,10 @@
 ﻿using Microsoft.Extensions.Configuration;
+using RabbitMQ.Shared;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using Tram34TCMSInterface.Application.Abstractions.UDP;
-using Tram34TCMSInterface.Domain.Models;
-using static Tram34TCMSInterface.Domain.Models.JsonDocumentFormatUDP;
 
 namespace Tram34TCMSInterface.Infrastructure.Services.UDP
 {
@@ -45,13 +44,12 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
             finally { semaphoreSlim.Release(); }
         }
 
-        public TrainData ConvertByteArrayToJson(byte[] buffer)
+        public Domain.Models.JsonDocumentFormatUDP.TrainData ConvertByteArrayToJson(byte[] buffer)
         {
             try
             {
                 // Byte dizisini UTF-8 ile string'e çevir
                 string jsonString = Encoding.UTF8.GetString(buffer);
-
 
                 var options = new JsonSerializerOptions
                 {
@@ -62,7 +60,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                 };
                 // JSON string'ini JsonDocument'e dönüştür
 
-                var data = JsonSerializer.Deserialize<TrainData>(jsonString,options);
+                var data = JsonSerializer.Deserialize<Domain.Models.JsonDocumentFormatUDP.TrainData>(jsonString, options);
 
                 // JSON dönüştürme başarılıysa JSON nesnesini döndür
                 return data;
@@ -79,7 +77,60 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                 Console.WriteLine($"Beklenmeyen hata: {ex.Message}");
                 return null;
             }
-           
+        }
+
+        private List<object> _previousTrainData = new(); // Önceki veriyi saklamak için  
+        JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        public bool SendDataToLogicManager(Domain.Models.JsonDocumentFormatUDP.TrainData data)
+        {
+            try
+            {
+                // MasterTrainId'yi JSON'dan al
+                var masterTrainId = data.MasterTrainId;  // MasterTrainId'yi JSON'dan alıyoruz
+
+                var sortedTrains = data.TRAIN
+                    .Where(train => train.IsTrainCoupled) // Sadece kuplajdaki trenleri al
+                    .OrderBy(train => train.TrainCoupledOrder) // Kuplaj sırasına göre sırala
+                    .Select(train => new
+                    {
+                        train.ID,
+                        train.IP,
+                        train.TrainCoupledOrder
+                    })
+                    .ToList();
+
+                // MasterTrainId'yi de ekle
+                var resultWithMasterTrain = new
+                {
+                    MasterTrainId = masterTrainId,  // MasterTrainId'yi ekliyoruz
+                    Trains = sortedTrains
+                };
+
+                // Yeni gelen JSON verisini serialize et
+                string jsonOutput = JsonSerializer.Serialize(resultWithMasterTrain, jsonSerializerOptions);
+
+                // Yeni veri eski veriden farklı mı kontrol et
+                if (!_previousTrainData.SequenceEqual(sortedTrains))
+                {
+                    Console.WriteLine($"Yeni veri gönderildi: {jsonOutput}");
+                    RabbitMQHelper.PublishMessage(RabbitMQConstants.RabbitMQHost, RabbitMQConstants.LedExchangeName, "fanout", "", jsonOutput);
+
+                    // Eski veriyi güncelle
+                    _previousTrainData = new List<object>(sortedTrains);
+
+                    return true; // Yeni veri gönderildiği için true döndür
+                }
+                else
+                {
+                    Console.WriteLine("Veri değişmedi, gönderilmiyor.");
+                    return false; // Veri değişmediği için false döndür
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Hata oluştu: {ex.Message}");
+                throw;
+            }
         }
     }
 }

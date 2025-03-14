@@ -13,6 +13,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Core\Tram34TCMSInterface.Application\Tram34TCMSInterface.Application.csproj" />
+    <ProjectReference Include="..\..\RabbitMQ.Shared\RabbitMQ.Shared.csproj" />
   </ItemGroup>
 
 </Project>

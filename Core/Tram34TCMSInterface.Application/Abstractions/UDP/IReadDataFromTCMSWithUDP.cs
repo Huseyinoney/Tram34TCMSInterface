@@ -10,6 +10,7 @@ namespace Tram34TCMSInterface.Application.Abstractions.UDP
     {
         Task<(byte[] Buffer, IPEndPoint SenderEndPoint)> ReadDataFromTCMS();
         TrainData ConvertByteArrayToJson(byte[] buffer);
+        bool SendDataToLogicManager(TrainData data);
         //UdpClient CreateSocket(int Port);
     }
 }

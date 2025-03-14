@@ -19,6 +19,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tram34TCMSInterface.Persist
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tram34TCMSInterface.Tram34ConsoleApp", "Presentation\Tram34TCMSInterface.Tram34ConsoleApp\Tram34TCMSInterface.Tram34ConsoleApp.csproj", "{8B194604-0616-4C8F-A1FF-87B974954D21}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RabbitMQ.Shared", "RabbitMQ.Shared\RabbitMQ.Shared.csproj", "{44E3DA05-F7A0-41EB-B783-E92D7D7568E5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -45,6 +47,10 @@ Global
 		{8B194604-0616-4C8F-A1FF-87B974954D21}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8B194604-0616-4C8F-A1FF-87B974954D21}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8B194604-0616-4C8F-A1FF-87B974954D21}.Release|Any CPU.Build.0 = Release|Any CPU
+		{44E3DA05-F7A0-41EB-B783-E92D7D7568E5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44E3DA05-F7A0-41EB-B783-E92D7D7568E5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44E3DA05-F7A0-41EB-B783-E92D7D7568E5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44E3DA05-F7A0-41EB-B783-E92D7D7568E5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
