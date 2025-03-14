@@ -10,24 +10,28 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
 {
     public class ReadDataFromTCMSWithUDP : IReadDataFromTCMSWithUDP
     {
-        private UdpClient udpClient;
+        private readonly UdpClient udpClient;
         private readonly IConfiguration _configuration;
-        private SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
+        private readonly SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
+        private List<object> _previousTrainData = new(); // Önceki veriyi saklamak için
+        private readonly JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
         public ReadDataFromTCMSWithUDP(IConfiguration configuration)
         {
-            _configuration = configuration;
+            _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             if (!int.TryParse(_configuration["UDP:Port"], out int port))
             {
-                throw new Exception();
+                throw new ArgumentException("Geçersiz port numarası.");
             }
-            this.udpClient = CreateSocket(port);
+
+            udpClient = new UdpClient(port);
         }
 
-        private UdpClient CreateSocket(int Port)
-        {
-            return new UdpClient(Port);
-        }
-
+        // Asenkron veri okuma işlemi
         public async Task<(byte[] Buffer, IPEndPoint SenderEndPoint)> ReadDataFromTCMS()
         {
             await semaphoreSlim.WaitAsync();
@@ -41,52 +45,59 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                 Console.WriteLine($"UDP Socket Hatası: {ex.Message}");
                 return (Array.Empty<byte>(), new IPEndPoint(IPAddress.None, 0));
             }
-            finally { semaphoreSlim.Release(); }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Beklenmeyen hata: {ex.Message}");
+                return (Array.Empty<byte>(), new IPEndPoint(IPAddress.None, 0));
+            }
+            finally
+            {
+                semaphoreSlim.Release();
+            }
         }
 
+        // Byte dizisini JSON formatına dönüştürme
         public Domain.Models.JsonDocumentFormatUDP.TrainData ConvertByteArrayToJson(byte[] buffer)
         {
             try
             {
-                // Byte dizisini UTF-8 ile string'e çevir
                 string jsonString = Encoding.UTF8.GetString(buffer);
 
                 var options = new JsonSerializerOptions
                 {
-                    PropertyNameCaseInsensitive = false,  // JSON içindeki property isimleri case-sensitive olsun
-                    AllowTrailingCommas = false,          // Fazladan virgül varsa hata versin
-                    ReadCommentHandling = JsonCommentHandling.Disallow, // JSON içinde yorum (// veya /* */) varsa hata versin
-                    DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never // Gereksiz alanları yok saymasın, eksik alan varsa hata versin
+                    PropertyNameCaseInsensitive = false,
+                    AllowTrailingCommas = false,
+                    ReadCommentHandling = JsonCommentHandling.Disallow,
+                    DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.Never
                 };
-                // JSON string'ini JsonDocument'e dönüştür
 
                 var data = JsonSerializer.Deserialize<Domain.Models.JsonDocumentFormatUDP.TrainData>(jsonString, options);
-
-                // JSON dönüştürme başarılıysa JSON nesnesini döndür
                 return data;
             }
             catch (JsonException ex)
             {
-                // Geçersiz JSON verisi durumunda hata mesajı
                 Console.WriteLine($"Geçersiz JSON Data: {ex.Message}");
                 return null;
             }
             catch (Exception ex)
             {
-                // Diğer hatalar için genel bir hata mesajı
                 Console.WriteLine($"Beklenmeyen hata: {ex.Message}");
                 return null;
             }
         }
 
-        private List<object> _previousTrainData = new(); // Önceki veriyi saklamak için  
-        JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions { WriteIndented = true, PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+        // Veriyi Logic Manager'a gönderme
         public bool SendDataToLogicManager(Domain.Models.JsonDocumentFormatUDP.TrainData data)
         {
+            if (data == null)
+            {
+                Console.WriteLine("Geçersiz veri: Null veri alındı.");
+                return false;
+            }
+
             try
             {
-                // MasterTrainId'yi JSON'dan al
-                var masterTrainId = data.MasterTrainId;  // MasterTrainId'yi JSON'dan alıyoruz
+                var masterTrainId = data.MasterTrainId;
 
                 var sortedTrains = data.TRAIN
                     .Where(train => train.IsTrainCoupled) // Sadece kuplajdaki trenleri al
@@ -99,17 +110,15 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                     })
                     .ToList();
 
-                // MasterTrainId'yi de ekle
                 var resultWithMasterTrain = new
                 {
-                    MasterTrainId = masterTrainId,  // MasterTrainId'yi ekliyoruz
+                    MasterTrainId = masterTrainId,
                     Trains = sortedTrains
                 };
 
-                // Yeni gelen JSON verisini serialize et
                 string jsonOutput = JsonSerializer.Serialize(resultWithMasterTrain, jsonSerializerOptions);
 
-                // Yeni veri eski veriden farklı mı kontrol et
+                // Eski veriye göre karşılaştırma yap
                 if (!_previousTrainData.SequenceEqual(sortedTrains))
                 {
                     Console.WriteLine($"Yeni veri gönderildi: {jsonOutput}");
@@ -129,7 +138,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
             catch (Exception ex)
             {
                 Console.WriteLine($"Hata oluştu: {ex.Message}");
-                throw;
+                return false; // Hata durumunda false döndür
             }
         }
     }

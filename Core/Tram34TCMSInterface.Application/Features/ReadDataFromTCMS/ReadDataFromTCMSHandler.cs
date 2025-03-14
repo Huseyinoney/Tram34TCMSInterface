@@ -7,41 +7,47 @@ namespace Tram34TCMSInterface.Application.Features.ReadDataFromTCMS
 {
     public class ReadDataFromTCMSHandler : IRequestHandler<ReadDataFromTCMSCommand, TrainData?>
     {
-        private readonly IReadDataFromTCMSWithUDP readDataFromTCMSWithUDP;
-        private readonly IConfiguration configuration;
-        string? expectedIp;
-        int expectedPort;
+        private readonly IReadDataFromTCMSWithUDP _udpService;
+        private readonly string _expectedIp;
+        private readonly int _expectedPort;
 
-        public ReadDataFromTCMSHandler(IReadDataFromTCMSWithUDP readDataFromTCMSWithUDP, IConfiguration configuration)
+
+        public ReadDataFromTCMSHandler(
+            IReadDataFromTCMSWithUDP udpService,
+            IConfiguration configuration
+            )
         {
-            this.readDataFromTCMSWithUDP = readDataFromTCMSWithUDP;
-            this.configuration = configuration;
-            expectedIp = this.configuration["UDP:Address"];
-            expectedPort = int.TryParse(this.configuration["UDP:SourcePort"], out int port) ? port : 0;
+            _udpService = udpService;
 
-            if (string.IsNullOrWhiteSpace(expectedIp) || expectedPort == 0)
+            (_expectedIp, _expectedPort) = GetUdpConfiguration(configuration);
+            if (string.IsNullOrWhiteSpace(_expectedIp) || _expectedPort == 0)
             {
                 throw new ArgumentException("Invalid IP or Port configuration in appsettings.json");
             }
         }
 
-        public async Task<TrainData> Handle(ReadDataFromTCMSCommand request, CancellationToken cancellationToken)
+        public async Task<TrainData?> Handle(ReadDataFromTCMSCommand request, CancellationToken cancellationToken)
         {
-            var (buffer, senderEndPoint) = await readDataFromTCMSWithUDP.ReadDataFromTCMS();
+            var (buffer, senderEndPoint) = await _udpService.ReadDataFromTCMS();
 
-            if (senderEndPoint.Address.ToString() == expectedIp && senderEndPoint.Port == expectedPort)
+            if (!IsExpectedSender(senderEndPoint))
             {
-                //beklenen porttansa convert et
-                var Result = readDataFromTCMSWithUDP.ConvertByteArrayToJson(buffer);
-                if (Result is not null)
-                {
-                    return Result;
-                }
                 return null;
             }
 
-            Console.WriteLine($"Beklenmeyen IP veya Port: {senderEndPoint.Address}:{senderEndPoint.Port}");
-            return null; // Beklenmeyen IP/porttan geldiyse boş döndür
+            return _udpService.ConvertByteArrayToJson(buffer);
+        }
+
+        private static (string, int) GetUdpConfiguration(IConfiguration configuration)
+        {
+            var ip = configuration["UDP:Address"];
+            var port = int.TryParse(configuration["UDP:SourcePort"], out int parsedPort) ? parsedPort : 0;
+            return (ip, port);
+        }
+
+        private bool IsExpectedSender(System.Net.IPEndPoint senderEndPoint)
+        {
+            return senderEndPoint.Address.ToString() == _expectedIp && senderEndPoint.Port == _expectedPort;
         }
     }
 }

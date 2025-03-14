@@ -78,7 +78,6 @@ namespace Tram34TCMSInterface.Domain.Models
             [JsonPropertyName("allRightDoorReleased")]
             public bool AllRightDoorReleased { get; set; }
         }
-
         public class TrainData
         {
             [JsonPropertyName("timeStamp")]
