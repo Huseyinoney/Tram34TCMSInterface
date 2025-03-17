@@ -12,11 +12,12 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
         private static SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         ReadDataFromTCMSCommand readDataFromTCMSCommand = new ReadDataFromTCMSCommand();
         SendDataToLogicManagerFromTCMSCommand sendDataToLogicManagerFromTCMSCommand = new SendDataToLogicManagerFromTCMSCommand();
+        JsonSerializerOptions jsonSerializerOptions = new() { WriteIndented = true };
         public ReadDataFromTCMSWithUDPBackgroundService(IMediator mediator)
+
         {
             this.mediator = mediator;
         }
-
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             Console.WriteLine("UDP Background Service Başladı...");
@@ -30,7 +31,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
                     {
                         sendDataToLogicManagerFromTCMSCommand.trainData = result;
                         await mediator.Send(sendDataToLogicManagerFromTCMSCommand, stoppingToken);
-                        string jsonResult = JsonSerializer.Serialize(result, new JsonSerializerOptions { WriteIndented = true });
+                        string jsonResult = JsonSerializer.Serialize(result, jsonSerializerOptions);
                         Console.WriteLine($"Alınan veri: {jsonResult}");
                     }
                 }

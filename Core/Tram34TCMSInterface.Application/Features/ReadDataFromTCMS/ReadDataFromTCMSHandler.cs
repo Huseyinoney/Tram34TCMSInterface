@@ -11,7 +11,6 @@ namespace Tram34TCMSInterface.Application.Features.ReadDataFromTCMS
         private readonly string _expectedIp;
         private readonly int _expectedPort;
 
-
         public ReadDataFromTCMSHandler(
             IReadDataFromTCMSWithUDP udpService,
             IConfiguration configuration
