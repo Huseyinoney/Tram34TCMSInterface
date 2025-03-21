@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Tram34TCMSInterface.Application.Features.SendDataToLogicManagerFromTCMS
+namespace Tram34TCMSInterface.Application.Features.SendCoupledDataToCoupleExchangeFromTCMS
 {
-    public class SendDataToLogicManagerFromTCMSCommand : IRequest<bool>
+    public class SendCoupledDataToCoupleExchangeFromTCMSCommand : IRequest<bool>
     {
         public Domain.Models.JsonDocumentFormatUDP.TrainData trainData { get; set; }
     }

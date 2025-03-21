@@ -2,22 +2,25 @@
 using Microsoft.Extensions.Hosting;
 using System.Text.Json;
 using Tram34TCMSInterface.Application.Features.ReadDataFromTCMS;
-using Tram34TCMSInterface.Application.Features.SendDataToLogicManagerFromTCMS;
+using Tram34TCMSInterface.Application.Features.SendCoupledDataToCoupleExchangeFromTCMS;
+using Tram34TCMSInterface.Application.Features.SendTakoMeterPulseDataToTakoReadExchangeFromTCMS;
+
 
 namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
 {
     public class ReadDataFromTCMSWithUDPBackgroundService : BackgroundService
     {
-        private IMediator mediator;
-        private static SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
+        private readonly IMediator mediator;
+        private SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         ReadDataFromTCMSCommand readDataFromTCMSCommand = new ReadDataFromTCMSCommand();
-        SendDataToLogicManagerFromTCMSCommand sendDataToLogicManagerFromTCMSCommand = new SendDataToLogicManagerFromTCMSCommand();
-        JsonSerializerOptions jsonSerializerOptions = new() { WriteIndented = true };
+        SendCoupledDataToCoupleExchangeFromTCMSCommand sendCoupledDataToCoupleExchangeFromTCMSCommand = new SendCoupledDataToCoupleExchangeFromTCMSCommand();
+        SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand = new SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand();
+        private readonly JsonSerializerOptions jsonSerializerOptions = new() { WriteIndented = true };
         public ReadDataFromTCMSWithUDPBackgroundService(IMediator mediator)
-
         {
             this.mediator = mediator;
         }
+
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             Console.WriteLine("UDP Background Service Başladı...");
@@ -29,10 +32,11 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
                     var result = await mediator.Send(readDataFromTCMSCommand, stoppingToken);
                     if (result is not null)
                     {
-                        sendDataToLogicManagerFromTCMSCommand.trainData = result;
-                        await mediator.Send(sendDataToLogicManagerFromTCMSCommand, stoppingToken);
-                        string jsonResult = JsonSerializer.Serialize(result, jsonSerializerOptions);
-                        Console.WriteLine($"Alınan veri: {jsonResult}");
+                        sendCoupledDataToCoupleExchangeFromTCMSCommand.trainData = result;
+                        await mediator.Send(sendCoupledDataToCoupleExchangeFromTCMSCommand, stoppingToken);
+
+                        SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand.trainData = result;
+                        await mediator.Send(SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand, stoppingToken);
                     }
                 }
                 catch (Exception ex)

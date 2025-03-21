@@ -6,23 +6,49 @@ namespace Tram34TCMSInterface.Domain.Models
 {
     public class JsonDocumentFormatUDP
     {
-        public class CouplingTrain
+        public class TrainData
         {
-            [JsonPropertyName("couplingTrainsIds")]
-            public List<int> CouplingTrainsIds { get; set; }
+            [JsonPropertyName("timeStamp")]
+            public string TimeStamp { get; set; }
 
-            public CouplingTrain()
-            {
-                CouplingTrainsIds = new List<int>();
-            }
+            [JsonPropertyName("masterTrainId")]
+            public int MasterTrainId { get; set; }
 
-            public void ValidateCouplingTrainsIds()
-            {
-                if (CouplingTrainsIds.Count > 4)
-                {
-                    throw new InvalidOperationException("CouplingTrainsIds listesi en fazla 4 öğe içerebilir.");
-                }
-            }
+            [JsonPropertyName("trainSpeed")]
+            public double TrainSpeed { get; set; }
+
+            [JsonPropertyName("zeroSpeed")]
+            public bool ZeroSpeed { get; set; }
+
+            [JsonPropertyName("tachoMeterPulse")]
+            public bool TachoMeterPulse { get; set; }
+
+            [JsonPropertyName("date")]
+            public string Date { get; set; }
+
+            [JsonPropertyName("time")]
+            public string Time { get; set; }
+
+            [JsonPropertyName("couplingTrainsId")]
+            public CouplingTrainsId CouplingTrainsId { get; set; }
+
+            [JsonPropertyName("train")]
+            public Train TRAIN { get; set; }
+        }
+
+        public class CouplingTrainsId
+        {
+            [JsonPropertyName("couplingTrainsIdXX1")]
+            public int CouplingTrainsIdXX1 { get; set; }
+
+            [JsonPropertyName("couplingTrainsIdXX2")]
+            public int? CouplingTrainsIdXX2 { get; set; }
+
+            [JsonPropertyName("couplingTrainsIdXX3")]
+            public int? CouplingTrainsIdXX3 { get; set; }
+
+            [JsonPropertyName("couplingTrainsIdXXX")]
+            public int? CouplingTrainsIdXXX { get; set; }
         }
 
         public class Train
@@ -33,17 +59,17 @@ namespace Tram34TCMSInterface.Domain.Models
             [JsonPropertyName("ip")]
             public string IP { get; set; }
 
-            [JsonPropertyName("cabAActive")]
-            public bool CabAActive { get; set; }
+            [JsonPropertyName("cab_A_Active")]
+            public bool Cab_A_Active { get; set; }
 
-            [JsonPropertyName("cabBActive")]
-            public bool CabBActive { get; set; }
+            [JsonPropertyName("cab_B_Active")]
+            public bool Cab_B_Active { get; set; }
 
-            [JsonPropertyName("cabineAKeyStatus")]
-            public bool CabineAKeyStatus { get; set; }
+            [JsonPropertyName("cab_A_KeyStatus")]
+            public bool Cab_A_KeyStatus { get; set; }
 
-            [JsonPropertyName("cabineBKeyStatus")]
-            public bool CabineBKeyStatus { get; set; }
+            [JsonPropertyName("cab_B_KeyStatus")]
+            public bool Cab_B_KeyStatus { get; set; }
 
             [JsonPropertyName("trainCoupledOrder")]
             public int TrainCoupledOrder { get; set; }
@@ -78,34 +104,6 @@ namespace Tram34TCMSInterface.Domain.Models
             [JsonPropertyName("allRightDoorReleased")]
             public bool AllRightDoorReleased { get; set; }
         }
-        public class TrainData
-        {
-            [JsonPropertyName("timeStamp")]
-            public string TimeStamp { get; set; }
 
-            [JsonPropertyName("masterTrainId")]
-            public int MasterTrainId { get; set; }
-
-            [JsonPropertyName("trainSpeed")]
-            public int TrainSpeed { get; set; }
-
-            [JsonPropertyName("zeroSpeed")]
-            public bool ZeroSpeed { get; set; }
-
-            [JsonPropertyName("tachoMeterPulse")]
-            public bool TachoMeterPulse { get; set; }
-
-            [JsonPropertyName("date")]
-            public string Date { get; set; }
-
-            [JsonPropertyName("time")]
-            public string Time { get; set; }
-
-            [JsonPropertyName("couplingTrainsIds")]
-            public List<CouplingTrain> CouplingTrainsIds { get; set; }
-
-            [JsonPropertyName("train")]
-            public List<Train> TRAIN { get; set; }
-        }
     }
 }
