@@ -1,89 +1,6 @@
-﻿//using Microsoft.Extensions.Hosting;
-//using System.Net.Sockets;
-//using System.Text;
-//using System.Text.Json;
-
-//public class UdpSenderBackgroundService : BackgroundService
-//{
-//    private readonly string _targetIp = "100.10.133.33"; // Hedef cihazın IP adresi
-//    private readonly int _targetPort = 6000; // Hedef port
-//    private readonly UdpClient _udpClient;
-
-//    public UdpSenderBackgroundService()
-//    {
-//        _udpClient = new UdpClient(5005);
-//    }
-
-//    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-//    {
-//        while (!stoppingToken.IsCancellationRequested)
-//        {
-//            var train =
-
-//                new
-//                {
-//                    ID = 202,
-//                    IP = "192.168.1.100",
-//                    CabAActive = true,
-//                    CabBActive = false,
-//                    CabineAKeyStatus = true,
-//                    CabineBKeyStatus = false,
-//                    TrainCoupledOrder = 2,
-//                    IsTrainCoupled = true,
-//                    AllDoorOpen = false,
-//                    AllDoorClose = true,
-//                    AllDoorReleased = false,
-//                    AllLeftDoorOpen = false,
-//                    AllRightDoorOpen = true,
-//                    AllLeftDoorClose = true,
-//                    AllRightDoorClose = false,
-//                    AllLeftDoorReleased = false,
-//                    AllRightDoorReleased = true
-//                };
-
-
-//            var data = new
-//            {
-//                TimeStamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss"),
-//                MasterTrainId = train.ID,
-//                TrainSpeed = 45.6,
-//                ZeroSpeed = false,
-//                TachoMeterPulse = true,
-//                Date = DateTime.UtcNow.ToString("yyyy-MM-dd"),
-//                Time = DateTime.UtcNow.ToString("HH:mm:ss"),
-//                CouplingTrainsId = new
-//                {
-//                    CouplingTrainsIdXX1 = 201,
-//                    CouplingTrainsIdXX2 = 202,
-//                    CouplingTrainsIdXX3 = 203,
-//                    CouplingTrainsIdXXX = 204
-//                },
-//                Train = train
-//            };
-
-//            var options = new JsonSerializerOptions
-//            {
-//                PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-//            };
-
-//            string jsonData = JsonSerializer.Serialize(data, options);
-//            byte[] sendBytes = Encoding.UTF8.GetBytes(jsonData);
-//            await _udpClient.SendAsync(sendBytes, sendBytes.Length, _targetIp, _targetPort);
-
-//            Console.WriteLine($"Veri gönderildi: {jsonData}");
-//            await Task.Delay(500, stoppingToken);
-//        }
-//    }
-
-//    public override void Dispose()
-//    {
-//        _udpClient?.Close();
-//        base.Dispose();
-//    }
-//}
-
-using Microsoft.Extensions.Hosting;
+﻿using Microsoft.Extensions.Hosting;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 
@@ -94,6 +11,9 @@ public class UdpSenderBackgroundService : BackgroundService
     private readonly UdpClient _udpClient;
     private bool _isPulseActive = false;  // Pulse durumunu takip etmek için bir değişken
     private bool _isWKeyPressed = false;  // W tuşunun basılı olup olmadığını kontrol etmek için bir değişken
+    private double _trainSpeed = 0;  // Trenin hızını takip eden değişken
+    private bool _zeroSpeed = true;  // Trenin durduğunu belirten değişken
+    private bool _doorsOpen = false;
 
     public UdpSenderBackgroundService()
     {
@@ -113,40 +33,40 @@ public class UdpSenderBackgroundService : BackgroundService
 
             var train = new
             {
-                ID = 202,
-                IP = "192.168.1.100",
+                ID = 7,
+                IP = "100.10.107.20",
                 CabAActive = true,
                 CabBActive = false,
                 CabineAKeyStatus = true,
                 CabineBKeyStatus = false,
                 TrainCoupledOrder = 2,
                 IsTrainCoupled = true,
-                AllDoorOpen = false,
-                AllDoorClose = true,
-                AllDoorReleased = false,
-                AllLeftDoorOpen = false,
-                AllRightDoorOpen = true,
-                AllLeftDoorClose = true,
-                AllRightDoorClose = false,
-                AllLeftDoorReleased = false,
-                AllRightDoorReleased = true
+                AllDoorOpen = _doorsOpen,
+                AllDoorClose = !_doorsOpen,
+                AllDoorReleased = _doorsOpen,
+                AllLeftDoorOpen = _doorsOpen,
+                AllRightDoorOpen = _doorsOpen,
+                AllLeftDoorClose = !_doorsOpen,
+                AllRightDoorClose = !_doorsOpen,
+                AllLeftDoorReleased = _doorsOpen,
+                AllRightDoorReleased = _doorsOpen
             };
 
             var data = new
             {
                 TimeStamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss"),
                 MasterTrainId = train.ID,
-                TrainSpeed = 45.6,
-                ZeroSpeed = false,
+                TrainSpeed = _trainSpeed,
+                ZeroSpeed = _zeroSpeed,
                 TachoMeterPulse = tachoMeterPulse,  // Pulse durumunu burada kullanıyoruz
                 Date = DateTime.UtcNow.ToString("yyyy-MM-dd"),
                 Time = DateTime.UtcNow.ToString("HH:mm:ss"),
                 CouplingTrainsId = new
                 {
-                    CouplingTrainsIdXX1 = 201,
-                    CouplingTrainsIdXX2 = 202,
-                    CouplingTrainsIdXX3 = 203,
-                    CouplingTrainsIdXXX = 204
+                    CouplingTrainsIdXX1 = 2,
+                    CouplingTrainsIdXX2 = 7,
+                    CouplingTrainsIdXX3 = 16,
+                    CouplingTrainsIdXXX = 28
                 },
                 Train = train
             };
@@ -164,42 +84,84 @@ public class UdpSenderBackgroundService : BackgroundService
             await Task.Delay(500, stoppingToken);
         }
     }
+    //private void MonitorKeyPress()
+    //{
+    //    while (true)
+    //    {
+    //        if (IsKeyDown(ConsoleKey.W))
+    //        {
+    //            if (!_isWKeyPressed)
+    //            {
+    //                _isPulseActive = true;
+    //                _isWKeyPressed = true;
+    //                _trainSpeed = 45.6;
+    //                _zeroSpeed = false;
+    //                Console.WriteLine("Pulse aktif edildi.");
+    //            }
+    //        }
+    //        else  // W tuşu bırakıldıysa
+    //        {
+    //            if (_isWKeyPressed)
+    //            {
+    //                _isPulseActive = false;
+    //                _isWKeyPressed = false;
+    //                _trainSpeed = 0;
+    //                _zeroSpeed = true;
+    //                Console.WriteLine("Pulse pasif edildi.");
+    //            }
+    //        }
 
-    // W tuşuna basıldığında pulse'u true yapıyoruz, tuş bırakıldığında ise pulse'u false yapıyoruz
+    //        Thread.Sleep(500);  // Daha hızlı tepki vermesi için bekleme süresini azalttık
+    //    }
+    //}
+
     private void MonitorKeyPress()
     {
         while (true)
         {
-            // Eğer bir tuş basıldıysa
-            if (Console.KeyAvailable)
+            // W tuşuna basılıysa
+            if (IsKeyDown(ConsoleKey.W))
             {
-                var key = Console.ReadKey(intercept: true);  // Tuş basımını dinliyoruz
-
-                if (key.Key == ConsoleKey.W)
+                if (!_isWKeyPressed)
                 {
-                    if (!_isWKeyPressed)
-                    {
-                        // Tuş ilk kez basıldığında, pulse aktif edilir
-                        _isPulseActive = true;
-                        _isWKeyPressed = true;
-                        Console.WriteLine("Pulse aktif edildi.");
-                    }
+                    _isPulseActive = true;
+                    _isWKeyPressed = true;
+                    _trainSpeed = 45.6;
+                    _zeroSpeed = false;
+                    Console.WriteLine("Pulse aktif edildi, tren hızlandı.");
                 }
             }
-            else
+            else  // W tuşu bırakıldığında
             {
                 if (_isWKeyPressed)
                 {
-                    // W tuşu bırakıldığında, pulse pasif yapılır
                     _isPulseActive = false;
                     _isWKeyPressed = false;
-                    Console.WriteLine("Pulse pasif edildi.");
+                    _trainSpeed = 0;
+                    _zeroSpeed = true;
+                    Console.WriteLine("Pulse pasif edildi, tren durdu.");
                 }
             }
 
-            // CPU'yu boşa harcamamamız için bir süre bekle
-            Thread.Sleep(500);
+            // D tuşuna basıldığında kapıları aç/kapat
+            if (IsKeyDown(ConsoleKey.D))
+            {
+                _doorsOpen = !_doorsOpen; // Kapıları toggle (aç/kapat)
+                Console.WriteLine(_doorsOpen ? "Kapılar açıldı." : "Kapılar kapandı.");
+                // Tuşun tekrar basılmasını önlemek için cooldown ekliyoruz
+            }
+
+            Thread.Sleep(500);  // Daha akıcı yanıt verebilmesi için bekleme süresini düşürdük
         }
+    }
+
+    // Windows API ile tuşun basılı olup olmadığını kontrol eden fonksiyon
+    [DllImport("user32.dll")]
+    private static extern short GetAsyncKeyState(int vKey);
+
+    private static bool IsKeyDown(ConsoleKey key)
+    {
+        return (GetAsyncKeyState((int)key) & 0x8000) != 0;
     }
 
     // Dispose metodu, UDP istemcisini kapatmak için kullanılır
@@ -215,4 +177,3 @@ public class UdpSenderBackgroundService : BackgroundService
         return _isPulseActive;
     }
 }
-

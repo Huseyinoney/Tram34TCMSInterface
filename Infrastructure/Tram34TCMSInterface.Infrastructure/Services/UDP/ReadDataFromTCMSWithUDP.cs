@@ -269,7 +269,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                 if (!_previousTrainData.Any() || !AreTrainsEqual(currentTrain, _previousTrainData.First() as Train))
                 {
                     Console.WriteLine($"Yeni veri gönderildi: {jsonOutput}");
-                    await RabbitMQService.PublishMessage(RabbitMQConstant.RabbitMQHost, RabbitMQConstant.LedExchangeName, "fanout", "", jsonOutput, ManagementEnum.LastMessage);
+                    await RabbitMQService.PublishMessage(RabbitMQConstant.RabbitMQHost, RabbitMQConstant.LedExchangeName, "fanout", "", jsonOutput, ManagementEnum.Live);
 
                     // Eski veriyi güncelle
                     _previousTrainData = new List<object> { currentTrain };
@@ -299,16 +299,16 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                    currentTrain.Cab_B_Active == previousTrain.Cab_B_Active &&
                    currentTrain.Cab_A_KeyStatus == previousTrain.Cab_A_KeyStatus &&
                    currentTrain.Cab_B_KeyStatus == previousTrain.Cab_B_KeyStatus &&
-                   currentTrain.IsTrainCoupled == previousTrain.IsTrainCoupled &&
-                   currentTrain.AllDoorOpen == previousTrain.AllDoorOpen &&
-                   currentTrain.AllDoorClose == previousTrain.AllDoorClose &&
-                   currentTrain.AllDoorReleased == previousTrain.AllDoorReleased &&
-                   currentTrain.AllLeftDoorOpen == previousTrain.AllLeftDoorOpen &&
-                   currentTrain.AllRightDoorOpen == previousTrain.AllRightDoorOpen &&
-                   currentTrain.AllLeftDoorClose == previousTrain.AllLeftDoorClose &&
-                   currentTrain.AllRightDoorClose == previousTrain.AllRightDoorClose &&
-                   currentTrain.AllLeftDoorReleased == previousTrain.AllLeftDoorReleased &&
-                   currentTrain.AllRightDoorReleased == previousTrain.AllRightDoorReleased;
+                   currentTrain.IsTrainCoupled == previousTrain.IsTrainCoupled;
+                   //currentTrain.AllDoorOpen == previousTrain.AllDoorOpen &&
+                   //currentTrain.AllDoorClose == previousTrain.AllDoorClose &&
+                   //currentTrain.AllDoorReleased == previousTrain.AllDoorReleased &&
+                   //currentTrain.AllLeftDoorOpen == previousTrain.AllLeftDoorOpen &&
+                   //currentTrain.AllRightDoorOpen == previousTrain.AllRightDoorOpen &&
+                   //currentTrain.AllLeftDoorClose == previousTrain.AllLeftDoorClose &&
+                   //currentTrain.AllRightDoorClose == previousTrain.AllRightDoorClose &&
+                   //currentTrain.AllLeftDoorReleased == previousTrain.AllLeftDoorReleased &&
+                   //currentTrain.AllRightDoorReleased == previousTrain.AllRightDoorReleased;
         }
 
         public async Task<bool> SendTakoMeterPulseDataToTakoReadExchange(TrainData data)
@@ -317,14 +317,17 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
             {
                 // TachoMeterPulse değerini al
                 bool tachoMeterPulse = data.TachoMeterPulse;
+                bool zeroSpeed = data.ZeroSpeed;
+                double trainSpeed = data.TrainSpeed;
+                bool doors = data.TRAIN.AllDoorOpen;
 
                 // TachoMeterPulse'u JSON formatında serileştir
-                string pulseJson = JsonSerializer.Serialize(new { TachoMeterPulse = tachoMeterPulse });
+                string pulseJson = JsonSerializer.Serialize(new { TachoMeterPulse = tachoMeterPulse, ZeroSpeed = zeroSpeed, TrainSpeed = trainSpeed ,Doors = doors});
 
                 // RabbitMQ kuyruğuna gönder
                 await RabbitMQService.PublishMessage(
                     RabbitMQConstant.RabbitMQHost,
-                    RabbitMQConstant.TakoReadExchangeName, // Pulse için yeni bir exchange adı
+                    RabbitMQConstant.LedExchangeName, // Pulse için yeni bir exchange adı
                     "fanout", // Tüm abonelere göndermek için fanout exchange kullanabilirsiniz
                     "", // Routing key'i boş bırakabilirsiniz
                     pulseJson,  // JSON verisi
