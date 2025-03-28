@@ -54,7 +54,7 @@ namespace Tram34TCMSInterface.Domain.Models
         public class Train
         {
             [JsonPropertyName("id")]
-            public int ID { get; set; }
+            public dynamic ID { get; set; }
 
             [JsonPropertyName("ip")]
             public string IP { get; set; }

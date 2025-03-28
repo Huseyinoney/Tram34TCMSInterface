@@ -90,134 +90,6 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
             }
         }
 
-        // Veriyi Logic Manager'a gönderme
-        //public async bool SendDataToLogicManager(Domain.Models.JsonDocumentFormatUDP.TrainData data)
-        //{
-        //    if (data == null)
-        //    {
-        //        Console.WriteLine("Geçersiz veri: Null veri alındı.");
-        //        return false;
-        //    }
-
-        //    try
-        //    {
-        //        var masterTrainId = data.MasterTrainId;
-
-        //        var sortedTrains = data.TRAIN
-        //            .Where(train => train.IsTrainCoupled) // Sadece kuplajdaki trenleri al
-        //            .OrderBy(train => train.TrainCoupledOrder) // Kuplaj sırasına göre sırala
-        //            .Select(train => new
-        //            {
-        //                train.ID,
-        //                train.IP,
-        //                train.TrainCoupledOrder
-        //            })
-        //            .ToList();
-
-        //        var resultWithMasterTrain = new
-        //        {
-        //            MasterTrainId = masterTrainId,
-        //            Trains = sortedTrains
-        //        };
-
-        //        string jsonOutput = JsonSerializer.Serialize(resultWithMasterTrain, jsonSerializerOptions);
-
-        //        // Eski veriye göre karşılaştırma yap
-        //        if (!_previousTrainData.SequenceEqual(sortedTrains))
-        //        {
-        //            Console.WriteLine($"Yeni veri gönderildi: {jsonOutput}");
-        //           await RabbitMQService.PublishMessage(RabbitMQConstant.RabbitMQHost, RabbitMQConstant.LedExchangeName, "fanout", "", jsonOutput,ManagementEnum.Live);
-
-        //            // Eski veriyi güncelle
-        //            _previousTrainData = new List<object>(sortedTrains);
-
-        //            return true; // Yeni veri gönderildiği için true döndür
-        //        }
-        //        else
-        //        {
-        //            Console.WriteLine("Veri değişmedi, gönderilmiyor.");
-        //            return false; // Veri değişmediği için false döndür
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"Hata oluştu: {ex.Message}");
-        //        return false; // Hata durumunda false döndür
-        //    }
-        //}
-
-        //public async Task<bool> SendDataToLogicManager(Tram34TCMSInterface.Domain.Models.JsonDocumentFormatUDP.TrainData data)
-        //{
-        //    if (data == null)
-        //    {
-        //        Console.WriteLine("Geçersiz veri: Null veri alındı.");
-        //        return false;
-        //    }
-
-        //    try
-        //    {
-        //        var masterTrainId = data.MasterTrainId;
-
-        //        // Şu anki trenin bilgilerini alıyoruz.
-        //        var currentTrain = data.TRAIN;  // Burada `TRAIN` zaten tek bir nesne olduğu için doğrudan erişim yapılır.
-
-        //        // Eğer şu anki tren kuplajda değilse, işleme devam edilmez
-        //        if (!currentTrain.IsTrainCoupled)
-        //        {
-        //            Console.WriteLine("Şu anki tren kuplajda değil.");
-        //            return false;
-        //        }
-
-        //        // Kuplajdaki trenlerin ID'leri
-        //        var coupledTrainIds = new List<int?>
-        //{
-        //    data.CouplingTrainsId.CouplingTrainsIdXX1,
-        //    data.CouplingTrainsId.CouplingTrainsIdXX2,
-        //    data.CouplingTrainsId.CouplingTrainsIdXX3,
-        //    data.CouplingTrainsId.CouplingTrainsIdXXX
-        //};
-
-        //        // Şu anki trenin bilgilerini ve kuplajdaki trenlerin ID'lerini içeriyor
-        //        var resultWithMasterTrain = new
-        //        {
-        //            MasterTrainId = masterTrainId,
-        //            CurrentTrain = new
-        //            {
-        //                currentTrain.ID,  // Şu anki trenin ID'si
-        //                currentTrain.IP,  // Şu anki trenin IP'si
-        //                currentTrain.TrainCoupledOrder  // Kuplaj sırası
-        //            },
-        //            CouplingTrainsIds = coupledTrainIds  // Kuplajdaki trenlerin ID'leri
-        //        };
-
-        //        // JSON çıktısı oluşturma
-        //        string jsonOutput = JsonSerializer.Serialize(resultWithMasterTrain, jsonSerializerOptions);
-
-        //        // Eski veri ile karşılaştırma yapılması
-        //        if (!_previousTrainData.SequenceEqual(new List<object> { currentTrain }))
-        //        {
-        //            Console.WriteLine($"Yeni veri gönderildi: {jsonOutput}");
-        //            await RabbitMQService.PublishMessage(RabbitMQConstant.RabbitMQHost, RabbitMQConstant.LedExchangeName, "fanout", "", jsonOutput, ManagementEnum.Live);
-
-        //            // Eski veriyi güncelle
-        //            _previousTrainData = new List<object> { currentTrain };
-
-        //            return true;  // Yeni veri gönderildi
-        //        }
-        //        else
-        //        {
-        //            Console.WriteLine("Veri değişmedi, gönderilmiyor.");
-        //            return false;  // Veri değişmedi
-        //        }
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"Hata oluştu: {ex.Message}");
-        //        return false;  // Hata durumunda false döndür
-        //    }
-        //}
-
-
         public async Task<bool> SendCoupledDataToCoupleExchange(Tram34TCMSInterface.Domain.Models.JsonDocumentFormatUDP.TrainData data)
         {
             if (data == null)
@@ -248,7 +120,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
             data.CouplingTrainsId.CouplingTrainsIdXX3,
             data.CouplingTrainsId.CouplingTrainsIdXXX
         };
-
+                currentTrain.ID = "Train " + currentTrain.ID.ToString();
                 // Şu anki trenin bilgilerini ve kuplajdaki trenlerin ID'lerini içeriyor
                 var resultWithMasterTrain = new
                 {
@@ -269,7 +141,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                 if (!_previousTrainData.Any() || !AreTrainsEqual(currentTrain, _previousTrainData.First() as Train))
                 {
                     Console.WriteLine($"Yeni veri gönderildi: {jsonOutput}");
-                    await RabbitMQService.PublishMessage(RabbitMQConstant.RabbitMQHost, RabbitMQConstant.LedExchangeName, "fanout", "", jsonOutput, ManagementEnum.Live);
+                    await RabbitMQService.PublishMessage(RabbitMQConstant.RabbitMQHost, RabbitMQConstant.CoupledTrainsExchangeName, "fanout", "", jsonOutput, ManagementEnum.Live);
 
                     // Eski veriyi güncelle
                     _previousTrainData = new List<object> { currentTrain };
@@ -300,15 +172,15 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                    currentTrain.Cab_A_KeyStatus == previousTrain.Cab_A_KeyStatus &&
                    currentTrain.Cab_B_KeyStatus == previousTrain.Cab_B_KeyStatus &&
                    currentTrain.IsTrainCoupled == previousTrain.IsTrainCoupled;
-                   //currentTrain.AllDoorOpen == previousTrain.AllDoorOpen &&
-                   //currentTrain.AllDoorClose == previousTrain.AllDoorClose &&
-                   //currentTrain.AllDoorReleased == previousTrain.AllDoorReleased &&
-                   //currentTrain.AllLeftDoorOpen == previousTrain.AllLeftDoorOpen &&
-                   //currentTrain.AllRightDoorOpen == previousTrain.AllRightDoorOpen &&
-                   //currentTrain.AllLeftDoorClose == previousTrain.AllLeftDoorClose &&
-                   //currentTrain.AllRightDoorClose == previousTrain.AllRightDoorClose &&
-                   //currentTrain.AllLeftDoorReleased == previousTrain.AllLeftDoorReleased &&
-                   //currentTrain.AllRightDoorReleased == previousTrain.AllRightDoorReleased;
+            //currentTrain.AllDoorOpen == previousTrain.AllDoorOpen &&
+            //currentTrain.AllDoorClose == previousTrain.AllDoorClose &&
+            //currentTrain.AllDoorReleased == previousTrain.AllDoorReleased &&
+            //currentTrain.AllLeftDoorOpen == previousTrain.AllLeftDoorOpen &&
+            //currentTrain.AllRightDoorOpen == previousTrain.AllRightDoorOpen &&
+            //currentTrain.AllLeftDoorClose == previousTrain.AllLeftDoorClose &&
+            //currentTrain.AllRightDoorClose == previousTrain.AllRightDoorClose &&
+            //currentTrain.AllLeftDoorReleased == previousTrain.AllLeftDoorReleased &&
+            //currentTrain.AllRightDoorReleased == previousTrain.AllRightDoorReleased;
         }
 
         public async Task<bool> SendTakoMeterPulseDataToTakoReadExchange(TrainData data)
@@ -322,12 +194,12 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                 bool doors = data.TRAIN.AllDoorOpen;
 
                 // TachoMeterPulse'u JSON formatında serileştir
-                string pulseJson = JsonSerializer.Serialize(new { TachoMeterPulse = tachoMeterPulse, ZeroSpeed = zeroSpeed, TrainSpeed = trainSpeed ,Doors = doors});
+                string pulseJson = JsonSerializer.Serialize(new { TachoMeterPulse = tachoMeterPulse, ZeroSpeed = zeroSpeed, TrainSpeed = trainSpeed, Doors = doors });
 
                 // RabbitMQ kuyruğuna gönder
                 await RabbitMQService.PublishMessage(
                     RabbitMQConstant.RabbitMQHost,
-                    RabbitMQConstant.LedExchangeName, // Pulse için yeni bir exchange adı
+                    RabbitMQConstant.TakoReadExchangeName, // Pulse için yeni bir exchange adı
                     "fanout", // Tüm abonelere göndermek için fanout exchange kullanabilirsiniz
                     "", // Routing key'i boş bırakabilirsiniz
                     pulseJson,  // JSON verisi
