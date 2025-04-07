@@ -12,7 +12,7 @@ namespace Tram34TCMSInterface.Domain.Models
             public string TimeStamp { get; set; }
 
             [JsonPropertyName("masterTrainId")]
-            public int MasterTrainId { get; set; }
+            public string MasterTrainId { get; set; }
 
             [JsonPropertyName("trainSpeed")]
             public double TrainSpeed { get; set; }
@@ -39,22 +39,22 @@ namespace Tram34TCMSInterface.Domain.Models
         public class CouplingTrainsId
         {
             [JsonPropertyName("couplingTrainsIdXX1")]
-            public int CouplingTrainsIdXX1 { get; set; }
+            public string CouplingTrainsIdXX1 { get; set; }
 
             [JsonPropertyName("couplingTrainsIdXX2")]
-            public int? CouplingTrainsIdXX2 { get; set; }
+            public string? CouplingTrainsIdXX2 { get; set; }
 
             [JsonPropertyName("couplingTrainsIdXX3")]
-            public int? CouplingTrainsIdXX3 { get; set; }
+            public string? CouplingTrainsIdXX3 { get; set; }
 
             [JsonPropertyName("couplingTrainsIdXXX")]
-            public int? CouplingTrainsIdXXX { get; set; }
+            public string? CouplingTrainsIdXXX { get; set; }
         }
 
         public class Train
         {
             [JsonPropertyName("id")]
-            public dynamic ID { get; set; }
+            public string ID { get; set; }
 
             [JsonPropertyName("ip")]
             public string IP { get; set; }

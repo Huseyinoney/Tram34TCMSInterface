@@ -113,14 +113,14 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                 }
 
                 // Kuplajdaki trenlerin ID'leri
-                var coupledTrainIds = new List<int?>
+                var coupledTrainIds = new List<string?>
         {
             data.CouplingTrainsId.CouplingTrainsIdXX1,
             data.CouplingTrainsId.CouplingTrainsIdXX2,
             data.CouplingTrainsId.CouplingTrainsIdXX3,
             data.CouplingTrainsId.CouplingTrainsIdXXX
         };
-                currentTrain.ID = "Train " + currentTrain.ID.ToString();
+                //currentTrain.ID = "Train " + currentTrain.ID.ToString();
                 // Şu anki trenin bilgilerini ve kuplajdaki trenlerin ID'lerini içeriyor
                 var resultWithMasterTrain = new
                 {
@@ -129,7 +129,12 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                     {
                         currentTrain.ID,  // Şu anki trenin ID'si
                         currentTrain.IP,  // Şu anki trenin IP'si
-                        currentTrain.TrainCoupledOrder  // Kuplaj sırası
+                        currentTrain.TrainCoupledOrder,// Kuplaj sırası
+                        currentTrain.IsTrainCoupled,
+                        currentTrain.Cab_A_Active,
+                        currentTrain.Cab_B_Active,
+                        currentTrain.Cab_A_KeyStatus,
+                        currentTrain.Cab_B_KeyStatus
                     },
                     CouplingTrainsIds = coupledTrainIds  // Kuplajdaki trenlerin ID'leri
                 };
@@ -187,14 +192,29 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
         {
             try
             {
-                // TachoMeterPulse değerini al
-                bool tachoMeterPulse = data.TachoMeterPulse;
-                bool zeroSpeed = data.ZeroSpeed;
-                double trainSpeed = data.TrainSpeed;
-                bool doors = data.TRAIN.AllDoorOpen;
+                string pulseJson = JsonSerializer.Serialize(new
+                {
+                    TachoMeterPulse = data.TachoMeterPulse,
+                    ZeroSpeed = data.ZeroSpeed,
+                    TrainSpeed = data.TrainSpeed,
+                    Doors = new
+                    {
+                        AllDoorOpen = data.TRAIN.AllDoorOpen,
+                        AllDoorClose = data.TRAIN.AllDoorClose,
+                        AllDoorReleased = data.TRAIN.AllDoorReleased,
+                        AllLeftDoorOpen = data.TRAIN.AllLeftDoorOpen,
+                        AllRightDoorOpen = data.TRAIN.AllRightDoorOpen,
+                        AllLeftDoorClose = data.TRAIN.AllLeftDoorClose,
+                        AllRightDoorClose = data.TRAIN.AllRightDoorClose,
+                        AllLeftDoorReleased = data.TRAIN.AllLeftDoorReleased,
+                        AllRightDoorReleased = data.TRAIN.AllRightDoorReleased
+                    }
+                },jsonSerializerOptions);
+               
+                
 
                 // TachoMeterPulse'u JSON formatında serileştir
-                string pulseJson = JsonSerializer.Serialize(new { TachoMeterPulse = tachoMeterPulse, ZeroSpeed = zeroSpeed, TrainSpeed = trainSpeed, Doors = doors });
+               
 
                 // RabbitMQ kuyruğuna gönder
                 await RabbitMQService.PublishMessage(
@@ -206,7 +226,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                     ManagementEnum.Live // Verinin hangi türde olduğunu belirtebilirsiniz (örneğin: "Live")
                 );
 
-                Console.WriteLine($"Pulse değeri gönderildi: {pulseJson}");
+                Console.WriteLine($"Pulse değeri gönderildi: {pulseJson}\n");
 
                 return true; // Başarılı
             }

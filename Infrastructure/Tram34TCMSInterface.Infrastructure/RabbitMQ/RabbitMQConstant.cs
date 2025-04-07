@@ -5,9 +5,10 @@
         public const string RabbitMQHost = "100.10.107.20";
         public const string ExchangeType = "fanout";
 
+        //TCMS'in Tako verisini LogicManager'a veri gönderdiği kuyruk İsmi
         public const string TakoReadExchangeName = "TakoRead";
-        public const string LedExchangeName = "LedPush";
-        public const string LedAddName = "LedsFromClient";
+
+        //TCMS'in Kuplajdaki Trenin Bilgilerini Diğer Uygulamaların Alması İçin Attığı Kuyruk İsmi
         public const string CoupledTrainsExchangeName = "CoupledTrains";
     }
 }

@@ -1,11 +1,10 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Configuration;
 using Tram34TCMSInterface.Application.Abstractions.UDP;
-using static Tram34TCMSInterface.Domain.Models.JsonDocumentFormatUDP;
 
 namespace Tram34TCMSInterface.Application.Features.ReadDataFromTCMS
 {
-    public class ReadDataFromTCMSHandler : IRequestHandler<ReadDataFromTCMSCommand, TrainData?>
+    public class ReadDataFromTCMSHandler : IRequestHandler<ReadDataFromTCMSCommand, Domain.Models.JsonDocumentFormatUDP.TrainData?>
     {
         private readonly IReadDataFromTCMSWithUDP _udpService;
         private readonly string _expectedIp;
@@ -25,7 +24,7 @@ namespace Tram34TCMSInterface.Application.Features.ReadDataFromTCMS
             }
         }
 
-        public async Task<TrainData?> Handle(ReadDataFromTCMSCommand request, CancellationToken cancellationToken)
+        public async Task<Domain.Models.JsonDocumentFormatUDP.TrainData?> Handle(ReadDataFromTCMSCommand request, CancellationToken cancellationToken)
         {
             var (buffer, senderEndPoint) = await _udpService.ReadDataFromTCMS();
 

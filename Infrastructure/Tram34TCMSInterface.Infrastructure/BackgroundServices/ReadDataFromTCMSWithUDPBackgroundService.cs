@@ -15,7 +15,6 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
         ReadDataFromTCMSCommand readDataFromTCMSCommand = new ReadDataFromTCMSCommand();
         SendCoupledDataToCoupleExchangeFromTCMSCommand sendCoupledDataToCoupleExchangeFromTCMSCommand = new SendCoupledDataToCoupleExchangeFromTCMSCommand();
         SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand = new SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand();
-        private readonly JsonSerializerOptions jsonSerializerOptions = new() { WriteIndented = true };
         public ReadDataFromTCMSWithUDPBackgroundService(IMediator mediator)
         {
             this.mediator = mediator;
