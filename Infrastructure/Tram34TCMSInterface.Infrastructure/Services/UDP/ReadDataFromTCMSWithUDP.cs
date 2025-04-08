@@ -112,14 +112,25 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                     return false;
                 }
 
-                // Kuplajdaki trenlerin ID'leri
-                var coupledTrainIds = new List<string?>
-        {
-            data.CouplingTrainsId.CouplingTrainsIdXX1,
-            data.CouplingTrainsId.CouplingTrainsIdXX2,
-            data.CouplingTrainsId.CouplingTrainsIdXX3,
-            data.CouplingTrainsId.CouplingTrainsIdXXX
-        };
+                //        // Kuplajdaki trenlerin ID'leri
+                //        var coupledTrainIds = new List<string>
+                //{
+                //    data.CouplingTrainsId.CouplingTrainsIdXX1,
+                //    data.CouplingTrainsId.CouplingTrainsIdXX2,
+                //    data.CouplingTrainsId.CouplingTrainsIdXX3,
+                //    data.CouplingTrainsId.CouplingTrainsIdXXX
+                //};
+
+                var coupledTrainIds = new[]
+{
+    data.CouplingTrainsId.CouplingTrainsIdXX1,
+    data.CouplingTrainsId.CouplingTrainsIdXX2,
+    data.CouplingTrainsId.CouplingTrainsIdXX3,
+    data.CouplingTrainsId.CouplingTrainsIdXXX
+}
+.Where(id => !string.IsNullOrEmpty(id))
+.ToList();
+
                 //currentTrain.ID = "Train " + currentTrain.ID.ToString();
                 // Şu anki trenin bilgilerini ve kuplajdaki trenlerin ID'lerini içeriyor
                 var resultWithMasterTrain = new
@@ -209,12 +220,12 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                         AllLeftDoorReleased = data.TRAIN.AllLeftDoorReleased,
                         AllRightDoorReleased = data.TRAIN.AllRightDoorReleased
                     }
-                },jsonSerializerOptions);
-               
-                
+                }, jsonSerializerOptions);
+
+
 
                 // TachoMeterPulse'u JSON formatında serileştir
-               
+
 
                 // RabbitMQ kuyruğuna gönder
                 await RabbitMQService.PublishMessage(

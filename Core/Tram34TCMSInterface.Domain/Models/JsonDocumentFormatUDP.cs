@@ -42,13 +42,13 @@ namespace Tram34TCMSInterface.Domain.Models
             public string CouplingTrainsIdXX1 { get; set; }
 
             [JsonPropertyName("couplingTrainsIdXX2")]
-            public string? CouplingTrainsIdXX2 { get; set; }
+            public string CouplingTrainsIdXX2 { get; set; }
 
             [JsonPropertyName("couplingTrainsIdXX3")]
-            public string? CouplingTrainsIdXX3 { get; set; }
+            public string CouplingTrainsIdXX3 { get; set; }
 
             [JsonPropertyName("couplingTrainsIdXXX")]
-            public string? CouplingTrainsIdXXX { get; set; }
+            public string CouplingTrainsIdXXX { get; set; }
         }
 
         public class Train
