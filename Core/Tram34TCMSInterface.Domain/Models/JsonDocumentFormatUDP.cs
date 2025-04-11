@@ -47,8 +47,8 @@ namespace Tram34TCMSInterface.Domain.Models
             [JsonPropertyName("couplingTrainsIdXX3")]
             public string CouplingTrainsIdXX3 { get; set; }
 
-            [JsonPropertyName("couplingTrainsIdXXX")]
-            public string CouplingTrainsIdXXX { get; set; }
+            [JsonPropertyName("couplingTrainsIdXX4")]
+            public string CouplingTrainsIdXX4 { get; set; }
         }
 
         public class Train

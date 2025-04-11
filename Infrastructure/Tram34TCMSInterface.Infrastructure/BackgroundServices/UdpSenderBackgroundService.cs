@@ -61,7 +61,7 @@ public class UdpSenderBackgroundService : BackgroundService
             var data = new
             {
                 TimeStamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ss"),
-                MasterTrainId = train.ID,
+                MasterTrainId = configuration["TrainSettings:MasterTrainId"],
                 TrainSpeed = _trainSpeed,
                 ZeroSpeed = _zeroSpeed,
                 TachoMeterPulse = tachoMeterPulse,  // Pulse durumunu burada kullanıyoruz
@@ -72,7 +72,7 @@ public class UdpSenderBackgroundService : BackgroundService
                     CouplingTrainsIdXX1 = configuration["TrainSettings:CouplingTrainsIdXX1"],
                     CouplingTrainsIdXX2 = configuration["TrainSettings:CouplingTrainsIdXX2"],
                     CouplingTrainsIdXX3 = configuration["TrainSettings:CouplingTrainsIdXX3"],
-                    CouplingTrainsIdXXX = configuration["TrainSettings:CouplingTrainsIdXXX"]
+                    CouplingTrainsIdXX4 = configuration["TrainSettings:CouplingTrainsIdXX4"]
                 },
                 Train = train
             };
@@ -86,8 +86,8 @@ public class UdpSenderBackgroundService : BackgroundService
             byte[] sendBytes = Encoding.UTF8.GetBytes(jsonData);
             await _udpClient.SendAsync(sendBytes, sendBytes.Length, _targetIp, _targetPort);
 
-            Console.WriteLine($"Veri gönderildi: {jsonData}\n");
-            await Task.Delay(200, stoppingToken);
+            //Console.WriteLine($"Veri gönderildi: {jsonData}\n");
+            await Task.Delay(int.Parse(configuration["TrainSettings:delay"]), stoppingToken);
         }
     }
 

@@ -4,7 +4,11 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Tram34TCMSInterface.Application.Abstractions.CacheMemory;
+using Tram34TCMSInterface.Application.Abstractions.LogService;
+using Tram34TCMSInterface.Application.Abstractions.MongoDB;
 using Tram34TCMSInterface.Application.Abstractions.UDP;
+using Tram34TCMSInterface.Domain.Log;
 using Tram34TCMSInterface.Infrastructure.RabbitMQ;
 using static Tram34TCMSInterface.Domain.Models.JsonDocumentFormatUDP;
 
@@ -12,17 +16,21 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
 {
     public class ReadDataFromTCMSWithUDP : IReadDataFromTCMSWithUDP
     {
+        private readonly ILogService logService;
+        private readonly ILogFactory logFactory;
         private readonly UdpClient udpClient;
         private readonly IConfiguration _configuration;
+        private readonly IMongoDBTrainConfigurationCacheService mongoDBTrainConfigurationCacheService;
         private readonly SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
         private List<object> _previousTrainData = new(); // Önceki veriyi saklamak için
+
         private readonly JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
         {
             WriteIndented = true,
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
-        public ReadDataFromTCMSWithUDP(IConfiguration configuration)
+        public ReadDataFromTCMSWithUDP(IConfiguration configuration, IMongoDBTrainConfigurationCacheService mongoDBTrainConfigurationCacheService, ILogService logService, ILogFactory logFactory)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             if (!int.TryParse(_configuration["UDP:Port"], out int port))
@@ -31,6 +39,9 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
             }
 
             udpClient = new UdpClient(port);
+            this.mongoDBTrainConfigurationCacheService = mongoDBTrainConfigurationCacheService;
+            this.logService = logService;
+            this.logFactory = logFactory;
         }
 
         // Asenkron veri okuma işlemi
@@ -112,24 +123,16 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                     return false;
                 }
 
-                //        // Kuplajdaki trenlerin ID'leri
-                //        var coupledTrainIds = new List<string>
-                //{
-                //    data.CouplingTrainsId.CouplingTrainsIdXX1,
-                //    data.CouplingTrainsId.CouplingTrainsIdXX2,
-                //    data.CouplingTrainsId.CouplingTrainsIdXX3,
-                //    data.CouplingTrainsId.CouplingTrainsIdXXX
-                //};
 
                 var coupledTrainIds = new[]
 {
-    data.CouplingTrainsId.CouplingTrainsIdXX1,
-    data.CouplingTrainsId.CouplingTrainsIdXX2,
-    data.CouplingTrainsId.CouplingTrainsIdXX3,
-    data.CouplingTrainsId.CouplingTrainsIdXXX
-}
-.Where(id => !string.IsNullOrEmpty(id))
-.ToList();
+                    data.CouplingTrainsId.CouplingTrainsIdXX1,
+                    data.CouplingTrainsId.CouplingTrainsIdXX2,
+                    data.CouplingTrainsId.CouplingTrainsIdXX3,
+                    data.CouplingTrainsId.CouplingTrainsIdXX4
+                }
+            .Where(id => !string.IsNullOrEmpty(id))
+            .ToList();
 
                 //currentTrain.ID = "Train " + currentTrain.ID.ToString();
                 // Şu anki trenin bilgilerini ve kuplajdaki trenlerin ID'lerini içeriyor
@@ -157,7 +160,14 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                 if (!_previousTrainData.Any() || !AreTrainsEqual(currentTrain, _previousTrainData.First() as Train))
                 {
                     Console.WriteLine($"Yeni veri gönderildi: {jsonOutput}");
-                    await RabbitMQService.PublishMessage(RabbitMQConstant.RabbitMQHost, RabbitMQConstant.CoupledTrainsExchangeName, "fanout", "", jsonOutput, ManagementEnum.Live);
+                    var result = await RabbitMQService.PublishMessage(RabbitMQConstant.RabbitMQHost, RabbitMQConstant.CoupledTrainsExchangeName, "fanout", "", jsonOutput, ManagementEnum.Live);
+                    if (result)
+                    {
+                        mongoDBTrainConfigurationCacheService.SaveTrainInformationToCache(currentTrain.ID);
+                        logService.TrainId = currentTrain.ID;
+                        await logService.SendLogAsync<EventLog>(logFactory.CreateEventLog("Kuplaj Bilgisi TCMS'ten Alındı","TCMSInterface","","",""));
+                    }
+
 
                     // Eski veriyi güncelle
                     _previousTrainData = new List<object> { currentTrain };
@@ -222,10 +232,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                     }
                 }, jsonSerializerOptions);
 
-
-
                 // TachoMeterPulse'u JSON formatında serileştir
-
 
                 // RabbitMQ kuyruğuna gönder
                 await RabbitMQService.PublishMessage(
