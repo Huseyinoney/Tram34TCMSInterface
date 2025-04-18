@@ -176,7 +176,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                 }
                 else
                 {
-                    Console.WriteLine("Veri değişmedi, gönderilmiyor.");
+                    //Console.WriteLine("Veri değişmedi, gönderilmiyor.");
                     return false;  // Veri değişmedi
                 }
             }
@@ -209,10 +209,13 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
             //currentTrain.AllRightDoorReleased == previousTrain.AllRightDoorReleased;
         }
 
+
         public async Task<bool> SendTakoMeterPulseDataToTakoReadExchange(TrainData data)
         {
+            
             try
             {
+                await semaphoreSlim.WaitAsync();
                 string pulseJson = JsonSerializer.Serialize(new
                 {
                     TachoMeterPulse = data.TachoMeterPulse,
@@ -232,27 +235,93 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                     }
                 }, jsonSerializerOptions);
 
-                // TachoMeterPulse'u JSON formatında serileştir
+                // RabbitMQ host listesi
+                var rabbitHosts = new List<string>
+        {
+           _configuration["RabbitMQ:TrainHosts:0"],
+            _configuration["RabbitMQ:TrainHosts:1"],
+           _configuration["RabbitMQ:TrainHosts:2"],
+           _configuration["RabbitMQ:TrainHosts:3"]
+        };
 
-                // RabbitMQ kuyruğuna gönder
-                await RabbitMQService.PublishMessage(
-                    RabbitMQConstant.RabbitMQHost,
-                    RabbitMQConstant.TakoReadExchangeName, // Pulse için yeni bir exchange adı
-                    "fanout", // Tüm abonelere göndermek için fanout exchange kullanabilirsiniz
-                    "", // Routing key'i boş bırakabilirsiniz
-                    pulseJson,  // JSON verisi
-                    ManagementEnum.Live // Verinin hangi türde olduğunu belirtebilirsiniz (örneğin: "Live")
+                // Gönderim görevlerini oluştur
+                var tasks = rabbitHosts.Select(async host =>
+                  await RabbitMQService.PublishMessage(
+                        host,
+                        RabbitMQConstant.TakoReadExchangeName,
+                        "fanout",
+                        "",
+                        pulseJson,
+                        ManagementEnum.Live
+                    )
                 );
 
-                Console.WriteLine($"Pulse değeri gönderildi: {pulseJson}\n");
+                // Tüm görevleri aynı anda başlat ve bitene kadar bekle
+                var result = await Task.WhenAll(tasks);
 
-                return true; // Başarılı
+                
+
+               // Console.WriteLine("Pulse verisi tüm trenlere eşzamanlı gönderildi.");
+
+                return true;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Pulse gönderme hatası: {ex.Message}");
-                return false; // Hata durumu
+                return false;
+            }
+            finally
+            {
+                semaphoreSlim.Release();
             }
         }
+
+
+
+        //public async Task<bool> SendTakoMeterPulseDataToTakoReadExchange(TrainData data)
+        //{
+        //    try
+        //    {
+        //        string pulseJson = JsonSerializer.Serialize(new
+        //        {
+        //            TachoMeterPulse = data.TachoMeterPulse,
+        //            ZeroSpeed = data.ZeroSpeed,
+        //            TrainSpeed = data.TrainSpeed,
+        //            Doors = new
+        //            {
+        //                AllDoorOpen = data.TRAIN.AllDoorOpen,
+        //                AllDoorClose = data.TRAIN.AllDoorClose,
+        //                AllDoorReleased = data.TRAIN.AllDoorReleased,
+        //                AllLeftDoorOpen = data.TRAIN.AllLeftDoorOpen,
+        //                AllRightDoorOpen = data.TRAIN.AllRightDoorOpen,
+        //                AllLeftDoorClose = data.TRAIN.AllLeftDoorClose,
+        //                AllRightDoorClose = data.TRAIN.AllRightDoorClose,
+        //                AllLeftDoorReleased = data.TRAIN.AllLeftDoorReleased,
+        //                AllRightDoorReleased = data.TRAIN.AllRightDoorReleased
+        //            }
+        //        }, jsonSerializerOptions);
+
+        //        // TachoMeterPulse'u JSON formatında serileştir
+
+        //        // RabbitMQ kuyruğuna gönder
+        //        await RabbitMQService.PublishMessage(
+        //            RabbitMQConstant.RabbitMQHost,
+        //            RabbitMQConstant.TakoReadExchangeName, // Pulse için yeni bir exchange adı
+        //            "fanout", // Tüm abonelere göndermek için fanout exchange kullanabilirsiniz
+        //            "", // Routing key'i boş bırakabilirsiniz
+        //            pulseJson,  // JSON verisi
+        //            ManagementEnum.Live // Verinin hangi türde olduğunu belirtebilirsiniz (örneğin: "Live")
+        //        );
+
+        //        Console.WriteLine($"Pulse değeri gönderildi: {pulseJson}\n");
+
+        //        return true; // Başarılı
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        Console.WriteLine($"Pulse gönderme hatası: {ex.Message}");
+        //        return false; // Hata durumu
+        //    }
+        //}
     }
 }
