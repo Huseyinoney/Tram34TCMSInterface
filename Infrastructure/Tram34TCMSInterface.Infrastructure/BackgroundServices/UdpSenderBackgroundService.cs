@@ -28,7 +28,7 @@ public class UdpSenderBackgroundService : BackgroundService
     // BackgroundService'de veri gönderme işlemini sürekli yapıyoruz
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
+       
         // W tuşuna basılıp basılmadığını kontrol etmek için sürekli bir döngü çalıştırıyoruz
         Task.Run(() => MonitorKeyPress());
         while (!stoppingToken.IsCancellationRequested)
