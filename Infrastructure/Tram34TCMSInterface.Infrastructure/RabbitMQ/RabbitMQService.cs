@@ -110,6 +110,36 @@ namespace Tram34TCMSInterface.Infrastructure.RabbitMQ
             throw new Exception("RabbitMQ bağlantısı sağlanamadı.");
         }
 
+        //public static async Task<bool> PublishMessage(string host, string exchangeName, string exchangeType, string routingKey, object obj, ManagementEnum management)
+        //{
+        //    try
+        //    {
+        //        IConnection connection = await GetConnectionAsync(host);
+        //        using IChannel channel = await connection.CreateChannelAsync();
+        //        await channel.ExchangeDeclareAsync(exchange: exchangeName, type: exchangeType, durable: true, autoDelete: false);
+        //        var message = JsonSerializer.Serialize(obj);
+        //        var body = Encoding.UTF8.GetBytes(message);
+        //        var properties = new BasicProperties() { Persistent = true };
+        //        await channel.BasicPublishAsync(exchange: exchangeName, routingKey: routingKey, mandatory: false, basicProperties: properties, body: body);
+        //        //Console.WriteLine($"[{host}] -> [{exchangeName}] mesaj gönderildi.");
+        //        return true;
+        //    }
+        //    catch (Exception ex)
+        //    {
+
+        //        Console.WriteLine($"[{host}] -> [{exchangeName}] Mesaj gönderilirken hata oluştu: " + ex.Message);
+        //        if (management == ManagementEnum.LastMessage)
+        //        {
+        //            AddMessage(new() { Host = host, ExchangeName = exchangeName, ExchangeType = exchangeType, RoutingKey = routingKey, Obj = obj });
+        //        }
+        //        else if (management == ManagementEnum.UnlostMessage)
+        //        {
+        //            unsetMessages.Add(new() { Host = host, ExchangeName = exchangeName, ExchangeType = exchangeType, RoutingKey = routingKey, Obj = obj });
+        //        }
+        //        return false;
+        //    }
+        //}
+
         public static async Task<bool> PublishMessage(string host, string exchangeName, string exchangeType, string routingKey, object obj, ManagementEnum management)
         {
             try
@@ -119,7 +149,11 @@ namespace Tram34TCMSInterface.Infrastructure.RabbitMQ
                 await channel.ExchangeDeclareAsync(exchange: exchangeName, type: exchangeType, durable: true, autoDelete: false);
                 var message = JsonSerializer.Serialize(obj);
                 var body = Encoding.UTF8.GetBytes(message);
-                var properties = new BasicProperties() { Persistent = true };
+                var properties = new BasicProperties()
+                {
+                    Persistent = true,
+                    MessageId = Guid.NewGuid().ToString()
+                };
                 await channel.BasicPublishAsync(exchange: exchangeName, routingKey: routingKey, mandatory: false, basicProperties: properties, body: body);
                 //Console.WriteLine($"[{host}] -> [{exchangeName}] mesaj gönderildi.");
                 return true;
@@ -139,6 +173,9 @@ namespace Tram34TCMSInterface.Infrastructure.RabbitMQ
                 return false;
             }
         }
+
+
+
 
         private static void AddMessage(UnsetMessages newMessage)
         {
