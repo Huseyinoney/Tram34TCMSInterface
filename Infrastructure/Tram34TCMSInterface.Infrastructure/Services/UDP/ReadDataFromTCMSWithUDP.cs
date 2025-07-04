@@ -27,7 +27,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
         private readonly JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
         {
             WriteIndented = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+            //PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
         public ReadDataFromTCMSWithUDP(IConfiguration configuration, IMongoDBTrainConfigurationCacheService mongoDBTrainConfigurationCacheService, ILogService logService, ILogFactory logFactory)

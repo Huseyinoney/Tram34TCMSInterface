@@ -5,6 +5,6 @@ namespace Tram34TCMSInterface.Application.Features.ReadDataFromTCMS
 {
     public class ReadDataFromTCMSCommand : IRequest<TrainData>
     {
-        public TrainData JsonDocumentFormatUDP { get; set; }
+        //public TrainData JsonDocumentFormatUDP { get; set; }
     }
 }

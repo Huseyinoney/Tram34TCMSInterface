@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Tram34TCMSInterface.Application.Abstractions.TCP;
 using Tram34TCMSInterface.Application.Abstractions.UDP;
 
 namespace Tram34TCMSInterface.Application.Features.SendCoupledDataToCoupleExchangeFromTCMS
@@ -11,16 +12,16 @@ namespace Tram34TCMSInterface.Application.Features.SendCoupledDataToCoupleExchan
     
     public class SendCoupledDataToCoupleExchangeFromTCMSHandler : IRequestHandler<SendCoupledDataToCoupleExchangeFromTCMSCommand, bool>
     {
-        private readonly IReadDataFromTCMSWithUDP readDataFromTCMSWithUDP;
+        private readonly IReadDataFromTCMSWithTCP readDataFromTCMSWithTCP;
 
-        public SendCoupledDataToCoupleExchangeFromTCMSHandler(IReadDataFromTCMSWithUDP readDataFromTCMSWithUDP)
+        public SendCoupledDataToCoupleExchangeFromTCMSHandler(IReadDataFromTCMSWithTCP readDataFromTCMSWithTCP)
         {
-            this.readDataFromTCMSWithUDP = readDataFromTCMSWithUDP;
+            this.readDataFromTCMSWithTCP = readDataFromTCMSWithTCP;
         }
 
         public async Task<bool> Handle(SendCoupledDataToCoupleExchangeFromTCMSCommand request, CancellationToken cancellationToken)
         {
-           var result = await readDataFromTCMSWithUDP.SendCoupledDataToCoupleExchange(request.trainData);
+           var result = await readDataFromTCMSWithTCP.SendCoupledDataToCoupleExchange(request.trainData);
             return result;
         }
     }

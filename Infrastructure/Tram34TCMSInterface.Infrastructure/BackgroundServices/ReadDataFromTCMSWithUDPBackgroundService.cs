@@ -14,7 +14,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
         private SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         ReadDataFromTCMSCommand readDataFromTCMSCommand = new ReadDataFromTCMSCommand();
         SendCoupledDataToCoupleExchangeFromTCMSCommand sendCoupledDataToCoupleExchangeFromTCMSCommand = new SendCoupledDataToCoupleExchangeFromTCMSCommand();
-        SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand = new SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand();
+        SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand sendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand = new SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand();
         public ReadDataFromTCMSWithUDPBackgroundService(IMediator mediator)
         {
             this.mediator = mediator;
@@ -34,8 +34,8 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
                         sendCoupledDataToCoupleExchangeFromTCMSCommand.trainData = result;
                         await mediator.Send(sendCoupledDataToCoupleExchangeFromTCMSCommand, stoppingToken);
 
-                        SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand.trainData = result;
-                        await mediator.Send(SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand, stoppingToken);
+                        sendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand.trainData = result;
+                        await mediator.Send(sendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand, stoppingToken);
                     }
                 }
                 catch (Exception ex)

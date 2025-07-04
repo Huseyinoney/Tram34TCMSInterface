@@ -8,102 +8,170 @@ namespace Tram34TCMSInterface.Domain.Models
     {
         public class TrainData
         {
-            [JsonPropertyName("timeStamp")]
+            [JsonPropertyName("TimeStamp")]
             public string TimeStamp { get; set; }
 
-            [JsonPropertyName("masterTrainId")]
+            [JsonPropertyName("MasterTrainId")]
             public string MasterTrainId { get; set; }
 
-            [JsonPropertyName("trainSpeed")]
+            [JsonPropertyName("TrainSpeed")]
             public double TrainSpeed { get; set; }
 
-            [JsonPropertyName("zeroSpeed")]
+            [JsonPropertyName("ZeroSpeed")]
             public bool ZeroSpeed { get; set; }
 
-            [JsonPropertyName("tachoMeterPulse")]
+            [JsonPropertyName("TachoMeterPulse")]
             public bool TachoMeterPulse { get; set; }
 
-            [JsonPropertyName("date")]
+            [JsonPropertyName("Date")]
             public string Date { get; set; }
 
-            [JsonPropertyName("time")]
+            [JsonPropertyName("Time")]
             public string Time { get; set; }
 
-            [JsonPropertyName("couplingTrainsId")]
+            [JsonPropertyName("CouplingTrainsId")]
             public CouplingTrainsId CouplingTrainsId { get; set; }
 
-            [JsonPropertyName("train")]
+            [JsonPropertyName("TRAIN")]
             public Train TRAIN { get; set; }
+
+            [JsonPropertyName("EMERGENCYSTATE")]
+            public EmergencyState EMERGENCYSTATE { get; set; }
         }
 
         public class CouplingTrainsId
         {
-            [JsonPropertyName("couplingTrainsIdXX1")]
+            [JsonPropertyName("CouplingTrainsIdXX1")]
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public string CouplingTrainsIdXX1 { get; set; }
 
-            [JsonPropertyName("couplingTrainsIdXX2")]
+            [JsonPropertyName("CouplingTrainsIdXX2")]
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public string CouplingTrainsIdXX2 { get; set; }
 
-            [JsonPropertyName("couplingTrainsIdXX3")]
+            [JsonPropertyName("CouplingTrainsIdXX3")]
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public string CouplingTrainsIdXX3 { get; set; }
 
-            [JsonPropertyName("couplingTrainsIdXX4")]
+            [JsonPropertyName("CouplingTrainsIdXX4")]
+            [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
             public string CouplingTrainsIdXX4 { get; set; }
         }
 
         public class Train
         {
-            [JsonPropertyName("id")]
+            [JsonPropertyName("ID")]
             public string ID { get; set; }
 
-            [JsonPropertyName("ip")]
+            [JsonPropertyName("IP")]
             public string IP { get; set; }
 
-            [JsonPropertyName("cab_A_Active")]
+            [JsonPropertyName("Cab_A_Active")]
             public bool Cab_A_Active { get; set; }
 
-            [JsonPropertyName("cab_B_Active")]
+            [JsonPropertyName("Cab_B_Active")]
             public bool Cab_B_Active { get; set; }
 
-            [JsonPropertyName("cab_A_KeyStatus")]
+            [JsonPropertyName("Cab_A_KeyStatus")]
             public bool Cab_A_KeyStatus { get; set; }
 
-            [JsonPropertyName("cab_B_KeyStatus")]
+            [JsonPropertyName("Cab_B_KeyStatus")]
             public bool Cab_B_KeyStatus { get; set; }
 
-            [JsonPropertyName("trainCoupledOrder")]
+            [JsonPropertyName("TrainCoupledOrder")]
             public int TrainCoupledOrder { get; set; }
 
-            [JsonPropertyName("isTrainCoupled")]
+            [JsonPropertyName("IsTrainCoupled")]
             public bool IsTrainCoupled { get; set; }
 
-            [JsonPropertyName("allDoorOpen")]
+            [JsonPropertyName("AllDoorOpen")]
             public bool AllDoorOpen { get; set; }
 
-            [JsonPropertyName("allDoorClose")]
+            [JsonPropertyName("AllDoorClose")]
             public bool AllDoorClose { get; set; }
 
-            [JsonPropertyName("allDoorReleased")]
+            [JsonPropertyName("AllDoorReleased")]
             public bool AllDoorReleased { get; set; }
 
-            [JsonPropertyName("allLeftDoorOpen")]
+            [JsonPropertyName("AllLeftDoorOpen")]
             public bool AllLeftDoorOpen { get; set; }
 
-            [JsonPropertyName("allRightDoorOpen")]
+            [JsonPropertyName("AllRightDoorOpen")]
             public bool AllRightDoorOpen { get; set; }
 
-            [JsonPropertyName("allLeftDoorClose")]
+            [JsonPropertyName("AllLeftDoorClose")]
             public bool AllLeftDoorClose { get; set; }
 
-            [JsonPropertyName("allRightDoorClose")]
+            [JsonPropertyName("AllRightDoorClose")]
             public bool AllRightDoorClose { get; set; }
 
-            [JsonPropertyName("allLeftDoorReleased")]
+            [JsonPropertyName("AllLeftDoorReleased")]
             public bool AllLeftDoorReleased { get; set; }
 
-            [JsonPropertyName("allRightDoorReleased")]
+            [JsonPropertyName("AllRightDoorReleased")]
             public bool AllRightDoorReleased { get; set; }
+
+            [JsonPropertyName("YBS_Intercom_1")]
+            public bool YBS_Intercom_1 { get; set; }
+
+            [JsonPropertyName("YBS_Intercom_2")]
+            public bool YBS_Intercom_2 { get; set; }
+
+            [JsonPropertyName("YBS_Intercom_3")]
+            public bool YBS_Intercom_3 { get; set; }
+
+            [JsonPropertyName("YBS_Intercom_4")]
+            public bool YBS_Intercom_4 { get; set; }
+
+            [JsonPropertyName("YBS_Intercom_5")]
+            public bool YBS_Intercom_5 { get; set; }
+
+            [JsonPropertyName("YBS_Intercom_6")]
+            public bool YBS_Intercom_6 { get; set; }
+
+            [JsonPropertyName("YBS_Intercom_7")]
+            public bool YBS_Intercom_7 { get; set; }
+
+            [JsonPropertyName("YBS_Intercom_8")]
+            public bool YBS_Intercom_8 { get; set; }
+        }
+
+        public class EmergencyState
+        {
+            [JsonPropertyName("EmergencyStopHandle1")]
+            public bool EmergencyStopHandle1 { get; set; }
+
+            [JsonPropertyName("EmergencyStopHandle2")]
+            public bool EmergencyStopHandle2 { get; set; }
+
+            [JsonPropertyName("EmergencyStopHandle3")]
+            public bool EmergencyStopHandle3 { get; set; }
+
+            [JsonPropertyName("EmergencyStopHandle4")]
+            public bool EmergencyStopHandle4 { get; set; }
+
+            [JsonPropertyName("EmergencyStopHandle5")]
+            public bool EmergencyStopHandle5 { get; set; }
+
+            [JsonPropertyName("EmergencyStopHandle6")]
+            public bool EmergencyStopHandle6 { get; set; }
+
+            [JsonPropertyName("EmergencyStopHandle7")]
+            public bool EmergencyStopHandle7 { get; set; }
+
+            [JsonPropertyName("EmergencyStopHandle8")]
+            public bool EmergencyStopHandle8 { get; set; }
+
+            [JsonPropertyName("FireDetectState1")]
+            public bool FireDetectState1 { get; set; }
+
+            [JsonPropertyName("FireDetectState2")]
+            public bool FireDetectState2 { get; set; }
         }
 
     }
 }
+
+
+
+
