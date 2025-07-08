@@ -2,7 +2,7 @@
 {
     public class RabbitMQConstant
     {
-        public const string RabbitMQHost = "rabbitmq";
+        public const string RabbitMQHost = "100.10.128.20";
         public const string ExchangeType = "fanout";
 
         //TCMS'in Tako verisini LogicManager'a veri gönderdiği kuyruk İsmi

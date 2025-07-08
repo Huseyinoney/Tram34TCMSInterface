@@ -1632,21 +1632,360 @@
 //}
 
 
+//ÇALIŞIYOR GÜNCEL
+//using MediatR;
+//using Microsoft.Extensions.Configuration;
+//using Microsoft.Extensions.Hosting;
+//using System.Net;
+//using System.Net.Sockets;
+//using System.Text;
+//using System.IO;
+//using System.Threading;
+//using System.Threading.Tasks;
+//using System.Text.Json;
+//using Tram34TCMSInterface.Application.Features.ReadDataFromTCMSWithTCP;
+//using Tram34TCMSInterface.Application.Features.SendCoupledDataToCoupleExchangeFromTCMS;
+//using Tram34TCMSInterface.Application.Features.SendTakoMeterPulseDataToTakoReadExchangeFromTCMS;
+//using Tram34TCMSInterface.Domain.Models;
+//using System.Text.Json.Serialization;
+
+//namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
+//{
+//    public class ReadDataFromTCMSWithTCPBackgroundService : BackgroundService
+//    {
+//        private readonly IMediator mediator;
+//        private readonly IConfiguration configuration;
+//        private TcpClient _client;
+//        private NetworkStream _stream;
+//        private bool isConnected = false;
+
+//        public ReadDataFromTCMSWithTCPBackgroundService(IMediator mediator, IConfiguration configuration)
+//        {
+//            this.mediator = mediator;
+//            this.configuration = configuration;
+//        }
+
+//        protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+//        {
+//            string? ip = configuration["TCP:Address"];
+//            string? portStr = configuration["TCP:SourcePort"];
+//            string? localIpStr = configuration["TCP:LocalIP"];
+//            string? localPortStr = configuration["TCP:LocalPort"];
+
+//            if (string.IsNullOrWhiteSpace(ip) || string.IsNullOrWhiteSpace(localIpStr))
+//                throw new ArgumentException("TCP IP adresleri boş olamaz.");
+
+//            if (!int.TryParse(portStr, out int remotePort) || !int.TryParse(localPortStr, out int localPort))
+//                throw new ArgumentException("TCP port bilgileri hatalı.");
+
+//            if (!IPAddress.TryParse(ip, out var remoteIPAddress) || !IPAddress.TryParse(localIpStr, out var localIPAddress))
+//                throw new ArgumentException("IP adres formatı hatalı.");
+
+//            while (!stoppingToken.IsCancellationRequested)
+//            {
+//                try
+//                {
+//                    if (!isConnected || _client == null /* || !_client.Connected */|| !IsSocketConnected(_client.Client))
+//                    {
+//                       // CleanupConnection();
+
+//                        var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+//                        socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+//                        socket.Bind(new IPEndPoint(localIPAddress, localPort));
+
+//                        _client = new TcpClient { Client = socket };
+//                        await _client.ConnectAsync(remoteIPAddress, remotePort, stoppingToken);
+//                        _stream = _client.GetStream();
+//                        isConnected = true;
+
+//                        Console.WriteLine($"Bağlandı: {localIPAddress}:{localPort} → {remoteIPAddress}:{remotePort}");
+
+//                        _ = Task.Run(() => HandleWriteAsync(_stream, stoppingToken), stoppingToken);
+//                    }
+
+//                    await HandleServerAsync(_client, _stream, stoppingToken);
+//                }
+//                catch (Exception ex)
+//                {
+//                    Console.WriteLine($"Bağlantı hatası: {ex.Message}\n");
+//                    //CleanupConnection();
+//                    await Task.Delay(500, stoppingToken);
+//                }
+//            }
+//        }
+
+//        private bool IsSocketConnected(Socket socket)
+//        {
+//            try
+//            {
+//                return !(socket.Poll(1, SelectMode.SelectRead) && socket.Available == 0);
+//            }
+//            catch
+//            {
+//                return false;
+//            }
+//        }
+
+//        private void CleanupConnection()
+//        {
+//            try { _stream?.Close(); } catch { }
+//            try { _stream?.Dispose(); } catch { }
+
+//            try
+//            {
+//                if (_client?.Client?.Connected == true)
+//                {
+//                    _client.Client.Shutdown(SocketShutdown.Both);
+//                }
+//            }
+//            catch { }
+
+//            try { _client?.Close(); } catch { }
+//            try { _client?.Dispose(); } catch { }
+
+//            _stream = null;
+//            _client = null;
+//            isConnected = false;
+//        }
+
+//        private async Task<int> ReadWithTimeoutAsync(Stream stream, byte[] buffer, int offset, int count, int timeoutMs, CancellationToken cancellationToken)
+//        {
+//            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+//            cts.CancelAfter(timeoutMs);
+//            try
+//            {
+//                return await stream.ReadAsync(buffer.AsMemory(offset, count), cts.Token);
+//            }
+//            catch (OperationCanceledException)
+//            {
+//                //throw new IOException("Veri okuma zaman aşımına uğradı.");
+//                Console.WriteLine("Veri okuma zaman aşımına uğradı.");
+//                return 0;
+
+//            }
+//        }
+
+//        private async Task DiscardUntilNewlineAsync(NetworkStream stream, CancellationToken token)
+//        {
+//            var discardBuffer = new byte[1];
+//            const int maxBytesToDiscard = 2048;
+//            int bytesDiscarded = 0;
+
+//            while (!token.IsCancellationRequested && bytesDiscarded < maxBytesToDiscard)
+//            {
+//                int read = await ReadWithTimeoutAsync(stream, discardBuffer, 0, 1, 500, token);
+//                if (read == 0 || discardBuffer[0] == (byte)'\n')
+//                {
+//                    Console.WriteLine($"Discard: \\n bulundu. {bytesDiscarded} byte atlandı.");
+//                    return;
+//                }
+//                bytesDiscarded++;
+//            }
+
+//            if (bytesDiscarded >= maxBytesToDiscard)
+//                Console.WriteLine("Uyarı: \\n bulunamadı, buffer temizleme sınırı aşıldı.");
+//        }
+
+//        private async Task HandleServerAsync(TcpClient client, NetworkStream stream, CancellationToken stoppingToken)
+//        {
+//            try
+//            {
+//                var remoteEndPoint = client.Client.RemoteEndPoint as IPEndPoint;
+//                const int LENGTH_HEADER_SIZE = 4;
+//                var lengthBuffer = new byte[LENGTH_HEADER_SIZE];
+
+//                while (!stoppingToken.IsCancellationRequested /*&& client.Connected*/)
+//                {
+//                    int totalRead = 0;
+//                    while (totalRead < LENGTH_HEADER_SIZE)
+//                    {
+//                        int bytesRead = await ReadWithTimeoutAsync(stream, lengthBuffer, totalRead, LENGTH_HEADER_SIZE - totalRead, 700, stoppingToken);
+//                        if (bytesRead == 0)
+//                        {
+//                            Console.WriteLine("Uyarı: uzunluk alınamadı.");
+//                            continue;
+//                        }
+//                        totalRead += bytesRead;
+//                    }
+
+//                    int messageLength = System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(lengthBuffer);
+//                    if (messageLength <= 0 || messageLength > 1024 * 1024)
+//                    {
+//                        Console.WriteLine($"Uyarı: Geçersiz uzunluk: {messageLength}");
+//                        await DiscardUntilNewlineAsync(stream, stoppingToken);
+//                        continue;
+//                    }
+
+//                    using var ms = new MemoryStream();
+//                    int remaining = messageLength;
+//                    bool incomplete = false;
+
+//                    while (remaining > 0)
+//                    {
+//                        var buffer = new byte[Math.Min(2048, remaining)];
+//                        int bytesRead;
+//                        try
+//                        {
+//                            bytesRead = await ReadWithTimeoutAsync(stream, buffer, 0, buffer.Length, 700, stoppingToken);
+//                        }
+//                        catch
+//                        {
+//                            Console.WriteLine("Uyarı: Mesaj eksik geldi. Buffer atlanıyor...");
+//                            await DiscardUntilNewlineAsync(stream, stoppingToken);
+//                            incomplete = true;
+//                            break;
+//                        }
+
+//                        if (bytesRead == 0)
+//                        {
+//                            Console.WriteLine("Uyarı: Mesaj erken kesildi. Buffer atlanıyor...");
+//                            await DiscardUntilNewlineAsync(stream, stoppingToken);
+//                            incomplete = true;
+//                            break;
+//                        }
+
+//                        await ms.WriteAsync(buffer.AsMemory(0, bytesRead), stoppingToken);
+//                        remaining -= bytesRead;
+//                    }
+
+//                    if (incomplete)
+//                        continue;
+
+//                    var newlineBuffer = new byte[1];
+//                    int readNewline = await ReadWithTimeoutAsync(stream, newlineBuffer, 0, 1, 700, stoppingToken);
+//                    if (readNewline == 0 || newlineBuffer[0] != (byte)'\n')
+//                    {
+//                        Console.WriteLine("Uyarı: \\n eksik veya hatalı. Buffer temizleniyor...");
+//                        await DiscardUntilNewlineAsync(stream, stoppingToken);
+//                        continue;
+//                    }
+
+//                    var jsonString = Encoding.UTF8.GetString(ms.ToArray());
+//                    if (string.IsNullOrWhiteSpace(jsonString))
+//                        continue;
+
+//                    var options = new JsonSerializerOptions
+//                    {
+//                        PropertyNameCaseInsensitive = true,
+//                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+//                    };
+
+//                    var trainData = JsonSerializer.Deserialize<JsonDocumentFormatUDP.TrainData>(jsonString, options);
+
+//                    if (trainData == null || HasNullProperty(trainData))
+//                    {
+//                        Console.WriteLine("Uyarı: Null alanlı veya hatalı JSON. Mesaj atlanıyor.");
+//                        continue;
+//                    }
+
+//                    var command = new ReadDataFromTCMSWithTCPCommand
+//                    {
+//                        DataBytes = Encoding.UTF8.GetBytes(jsonString),
+//                        RemoteEndPoint = remoteEndPoint
+//                    };
+
+//                    var result = await mediator.Send(command, stoppingToken);
+//                    if (result is not null)
+//                    {
+//                        await mediator.Send(new SendCoupledDataToCoupleExchangeFromTCMSCommand { trainData = result }, stoppingToken);
+//                        await mediator.Send(new SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand { trainData = result }, stoppingToken);
+//                    }
+//                }
+//            }
+//            catch (Exception ex)
+//            {
+//                Console.WriteLine($"Veri işleme hatası: {ex.Message}");
+//                CleanupConnection();
+//            }
+//        }
+
+//        private bool HasNullProperty(object obj)
+//        {
+//            if (obj == null) return true;
+//            var type = obj.GetType();
+//            foreach (var property in type.GetProperties())
+//            {
+//                if (property.Name == nameof(JsonDocumentFormatUDP.TrainData.CouplingTrainsId)) continue;
+//                var value = property.GetValue(obj);
+//                if (value == null) return true;
+//                if (!property.PropertyType.IsPrimitive && property.PropertyType != typeof(string))
+//                    if (HasNullProperty(value)) return true;
+//            }
+//            return false;
+//        }
+
+//        private string GetLocalIPAddress()
+//        {
+//            var host = Dns.GetHostEntry(Dns.GetHostName());
+//            foreach (var ip in host.AddressList)
+//                if (ip.AddressFamily == AddressFamily.InterNetwork)
+//                    return ip.ToString();
+//            return "127.0.0.1";
+//        }
+
+//        private async Task HandleWriteAsync(NetworkStream stream, CancellationToken cancellationToken)
+//        {
+//            while (!cancellationToken.IsCancellationRequested)
+//            {
+//                var now = DateTime.UtcNow;
+
+//                var outgoingData = new
+//                {
+//                    TimeStamp = now.ToString("yyyy-MM-ddTHH:mm:ss"),
+//                    Date = now.ToString("yyyy-MM-dd"),
+//                    Time = now.ToString("HH:mm:ss"),
+//                    IP = GetLocalIPAddress(),
+//                    Heartbeat = 1,
+//                    YBS_Announcement_State = true,
+//                    YBS_Intercom_State = true,
+//                    YBS_Intercom_1 = false,
+//                    YBS_Intercom_2 = false,
+//                    YBS_Intercom_3 = false,
+//                    YBS_Intercom_4 = false,
+//                    YBS_Intercom_5 = false,
+//                    YBS_Intercom_6 = false,
+//                    YBS_Intercom_7 = false,
+//                    YBS_Intercom_8 = false
+//                };
+
+//                var json = JsonSerializer.Serialize(outgoingData);
+//                var bytes = Encoding.UTF8.GetBytes(json);
+
+//                try
+//                {
+//                    await stream.WriteAsync(bytes, 0, bytes.Length, cancellationToken);
+//                    Console.WriteLine("Gönderildi: " + json);
+//                }
+//                catch (Exception ex)
+//                {
+//                    Console.WriteLine("Gönderim hatası: " + ex.Message);
+//                    break;
+//                }
+
+//                await Task.Delay(500, cancellationToken);
+//            }
+//        }
+//    }
+//}
+
+
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.IO;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Text.Json;
+using System.Collections.Generic;
+using System;
+using System.IO;
 using Tram34TCMSInterface.Application.Features.ReadDataFromTCMSWithTCP;
 using Tram34TCMSInterface.Application.Features.SendCoupledDataToCoupleExchangeFromTCMS;
 using Tram34TCMSInterface.Application.Features.SendTakoMeterPulseDataToTakoReadExchangeFromTCMS;
 using Tram34TCMSInterface.Domain.Models;
-using System.Text.Json.Serialization;
 
 namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
 {
@@ -1699,6 +2038,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
 
                         Console.WriteLine($"Bağlandı: {localIPAddress}:{localPort} → {remoteIPAddress}:{remotePort}");
 
+                        // Yazma task’i başlat
                         _ = Task.Run(() => HandleWriteAsync(_stream, stoppingToken), stoppingToken);
                     }
 
@@ -1747,21 +2087,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
             isConnected = false;
         }
 
-        private async Task<int> ReadWithTimeoutAsync(Stream stream, byte[] buffer, int offset, int count, int timeoutMs, CancellationToken cancellationToken)
-        {
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            cts.CancelAfter(timeoutMs);
-            try
-            {
-                return await stream.ReadAsync(buffer.AsMemory(offset, count), cts.Token);
-            }
-            catch (OperationCanceledException)
-            {
-                throw new IOException("Veri okuma zaman aşımına uğradı.");
-            }
-        }
-
-        private async Task DiscardUntilNewlineAsync(NetworkStream stream, CancellationToken token)
+        private async Task DiscardUntilNewlineAsync(NetworkStream stream, List<byte> buffer, CancellationToken token)
         {
             var discardBuffer = new byte[1];
             const int maxBytesToDiscard = 2048;
@@ -1769,7 +2095,20 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
 
             while (!token.IsCancellationRequested && bytesDiscarded < maxBytesToDiscard)
             {
-                int read = await ReadWithTimeoutAsync(stream, discardBuffer, 0, 1, 500, token);
+                if (buffer.Count > 0)
+                {
+                    if (buffer[0] == (byte)'\n')
+                    {
+                        buffer.RemoveAt(0);
+                        Console.WriteLine($"Discard: \\n bulundu. {bytesDiscarded} byte atlandı.");
+                        return;
+                    }
+                    buffer.RemoveAt(0);
+                    bytesDiscarded++;
+                    continue;
+                }
+
+                int read = await stream.ReadAsync(discardBuffer, 0, 1, token);
                 if (read == 0 || discardBuffer[0] == (byte)'\n')
                 {
                     Console.WriteLine($"Discard: \\n bulundu. {bytesDiscarded} byte atlandı.");
@@ -1784,107 +2123,118 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
 
         private async Task HandleServerAsync(TcpClient client, NetworkStream stream, CancellationToken stoppingToken)
         {
+            var remoteEndPoint = client.Client.RemoteEndPoint as IPEndPoint;
+            const int LENGTH_HEADER_SIZE = 4;
+            var buffer = new List<byte>();
+            var readBuffer = new byte[1300];
+
             try
             {
-                var remoteEndPoint = client.Client.RemoteEndPoint as IPEndPoint;
-                const int LENGTH_HEADER_SIZE = 4;
-                var lengthBuffer = new byte[LENGTH_HEADER_SIZE];
-
                 while (!stoppingToken.IsCancellationRequested && client.Connected)
                 {
-                    int totalRead = 0;
-                    while (totalRead < LENGTH_HEADER_SIZE)
+                    int bytesRead = 0;
+                    try
                     {
-                        int bytesRead = await ReadWithTimeoutAsync(stream, lengthBuffer, totalRead, LENGTH_HEADER_SIZE - totalRead, 700, stoppingToken);
+                        bytesRead = await stream.ReadAsync(readBuffer.AsMemory(0, readBuffer.Length), stoppingToken);
                         if (bytesRead == 0)
                         {
-                            Console.WriteLine("Uyarı: uzunluk alınamadı.");
+                            Console.WriteLine("Bağlantı kapandı.");
+                            break;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Okuma hatası: {ex.Message}");
+                        break;
+                    }
+
+                    buffer.AddRange(readBuffer.AsSpan(0, bytesRead).ToArray());
+
+                    while (true)
+                    {
+                        if (buffer.Count < LENGTH_HEADER_SIZE)
+                            break;
+
+                        int messageLength = System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(buffer.GetRange(0, LENGTH_HEADER_SIZE).ToArray());
+
+                        if (messageLength <= 0 || messageLength > 1024 * 1024)
+                        {
+                            Console.WriteLine($"Uyarı: Geçersiz mesaj uzunluğu {messageLength}. Buffer temizleniyor.");
+                            await DiscardUntilNewlineAsync(stream, buffer, stoppingToken);
                             continue;
                         }
-                        totalRead += bytesRead;
-                    }
 
-                    int messageLength = System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(lengthBuffer);
-                    if (messageLength <= 0 || messageLength > 1024 * 1024)
-                    {
-                        Console.WriteLine($"Uyarı: Geçersiz uzunluk: {messageLength}");
-                        await DiscardUntilNewlineAsync(stream, stoppingToken);
-                        continue;
-                    }
+                        int totalMessageSize = LENGTH_HEADER_SIZE + messageLength + 1;
 
-                    using var ms = new MemoryStream();
-                    int remaining = messageLength;
-                    bool incomplete = false;
+                        if (buffer.Count < totalMessageSize)
+                            break;
 
-                    while (remaining > 0)
-                    {
-                        var buffer = new byte[Math.Min(2048, remaining)];
-                        int bytesRead;
+                        if (buffer[LENGTH_HEADER_SIZE + messageLength] != (byte)'\n')
+                        {
+                            Console.WriteLine("Uyarı: Mesaj sonunda '\\n' yok veya hatalı. Buffer temizleniyor.");
+
+                            if (buffer.Count >= totalMessageSize)
+                            {
+                                //buffer.RemoveRange(0, totalMessageSize);
+                                buffer.Clear();
+                            }
+                            else
+                            {
+                                buffer.Clear();
+                            }
+
+                            continue;
+                        }
+
+                        var messageBytes = buffer.GetRange(LENGTH_HEADER_SIZE, messageLength).ToArray();
+                        string jsonString = Encoding.UTF8.GetString(messageBytes);
+
+                        if (string.IsNullOrWhiteSpace(jsonString))
+                        {
+                            Console.WriteLine("Uyarı: Boş JSON mesajı atlanıyor.");
+                            buffer.RemoveRange(0, totalMessageSize);
+                            continue;
+                        }
+
+                        var options = new JsonSerializerOptions
+                        {
+                            PropertyNameCaseInsensitive = true,
+                            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+                        };
+
+                        JsonDocumentFormatUDP.TrainData? trainData = null;
                         try
                         {
-                            bytesRead = await ReadWithTimeoutAsync(stream, buffer, 0, buffer.Length, 700, stoppingToken);
+                            trainData = JsonSerializer.Deserialize<JsonDocumentFormatUDP.TrainData>(jsonString, options);
                         }
-                        catch
+                        catch (Exception ex)
                         {
-                            Console.WriteLine("Uyarı: Mesaj eksik geldi. Buffer atlanıyor...");
-                            await DiscardUntilNewlineAsync(stream, stoppingToken);
-                            incomplete = true;
-                            break;
+                            Console.WriteLine($"Uyarı: JSON deserialize hatası: {ex.Message}");
+                            buffer.RemoveRange(0, totalMessageSize);
+                            continue;
                         }
 
-                        if (bytesRead == 0)
+                        if (trainData == null || HasNullProperty(trainData))
                         {
-                            Console.WriteLine("Uyarı: Mesaj erken kesildi. Buffer atlanıyor...");
-                            await DiscardUntilNewlineAsync(stream, stoppingToken);
-                            incomplete = true;
-                            break;
+                            Console.WriteLine("Uyarı: Null alanlı veya hatalı JSON. Mesaj atlanıyor.");
+                            buffer.RemoveRange(0, totalMessageSize);
+                            continue;
                         }
 
-                        await ms.WriteAsync(buffer.AsMemory(0, bytesRead), stoppingToken);
-                        remaining -= bytesRead;
-                    }
+                        var command = new ReadDataFromTCMSWithTCPCommand
+                        {
+                            DataBytes = Encoding.UTF8.GetBytes(jsonString),
+                            RemoteEndPoint = remoteEndPoint
+                        };
 
-                    if (incomplete)
-                        continue;
+                        var result = await mediator.Send(command, stoppingToken);
+                        if (result != null)
+                        {
+                            await mediator.Send(new SendCoupledDataToCoupleExchangeFromTCMSCommand { trainData = result }, stoppingToken);
+                            await mediator.Send(new SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand { trainData = result }, stoppingToken);
+                        }
 
-                    var newlineBuffer = new byte[1];
-                    int readNewline = await ReadWithTimeoutAsync(stream, newlineBuffer, 0, 1, 700, stoppingToken);
-                    if (readNewline == 0 || newlineBuffer[0] != (byte)'\n')
-                    {
-                        Console.WriteLine("Uyarı: \\n eksik veya hatalı. Buffer temizleniyor...");
-                        await DiscardUntilNewlineAsync(stream, stoppingToken);
-                        continue;
-                    }
-
-                    var jsonString = Encoding.UTF8.GetString(ms.ToArray());
-                    if (string.IsNullOrWhiteSpace(jsonString))
-                        continue;
-
-                    var options = new JsonSerializerOptions
-                    {
-                        PropertyNameCaseInsensitive = true,
-                        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-                    };
-
-                    var trainData = JsonSerializer.Deserialize<JsonDocumentFormatUDP.TrainData>(jsonString, options);
-
-                    if (trainData == null || HasNullProperty(trainData))
-                    {
-                        Console.WriteLine("Uyarı: Null alanlı veya hatalı JSON. Mesaj atlanıyor.");
-                        continue;
-                    }
-
-                    var command = new ReadDataFromTCMSWithTCPCommand
-                    {
-                        DataBytes = Encoding.UTF8.GetBytes(jsonString),
-                        RemoteEndPoint = remoteEndPoint
-                    };
-
-                    var result = await mediator.Send(command, stoppingToken);
-                    if (result is not null)
-                    {
-                        await mediator.Send(new SendCoupledDataToCoupleExchangeFromTCMSCommand { trainData = result }, stoppingToken);
-                        await mediator.Send(new SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand { trainData = result }, stoppingToken);
+                        buffer.RemoveRange(0, totalMessageSize);
                     }
                 }
             }
@@ -1963,7 +2313,5 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
         }
     }
 }
-
-
 
 

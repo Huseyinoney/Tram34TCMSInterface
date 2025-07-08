@@ -47,7 +47,7 @@ builder.Services.AddSingleton<HttpClient>();
 //builder.Services.AddHostedService<UdpSenderBackgroundService>();
 
 //TCP ile veri gönderme simule edilmeli !!!
-builder.Services.AddHostedService<TCPSenderBackgroundService>();
+//builder.Services.AddHostedService<TCPSenderBackgroundService>();
 
 builder.Services.AddHostedService<ReadDataFromTCMSWithTCPBackgroundService>();
 
