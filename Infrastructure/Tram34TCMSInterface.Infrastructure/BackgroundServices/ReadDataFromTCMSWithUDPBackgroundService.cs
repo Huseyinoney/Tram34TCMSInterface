@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using System.Text.Json;
 using Tram34TCMSInterface.Application.Features.ReadDataFromTCMS;
@@ -11,13 +12,15 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
     public class ReadDataFromTCMSWithUDPBackgroundService : BackgroundService
     {
         private readonly IMediator mediator;
+        private readonly IConfiguration configuration;
         private SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
         ReadDataFromTCMSCommand readDataFromTCMSCommand = new ReadDataFromTCMSCommand();
         SendCoupledDataToCoupleExchangeFromTCMSCommand sendCoupledDataToCoupleExchangeFromTCMSCommand = new SendCoupledDataToCoupleExchangeFromTCMSCommand();
         SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand = new SendTakoMeterPulseDataToTakoReadExchangeFromTCMSCommand();
-        public ReadDataFromTCMSWithUDPBackgroundService(IMediator mediator)
+        public ReadDataFromTCMSWithUDPBackgroundService(IMediator mediator, IConfiguration configuration)
         {
             this.mediator = mediator;
+            this.configuration = configuration;
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -43,6 +46,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
                     Console.WriteLine($"Hata oluştu: {ex.Message}");
                 }
                 finally { _semaphore.Release(); }
+                await Task.Delay(int.Parse(configuration["TrainSettings:SendDelayRabbitmq"]), stoppingToken);
             }
         }
     }

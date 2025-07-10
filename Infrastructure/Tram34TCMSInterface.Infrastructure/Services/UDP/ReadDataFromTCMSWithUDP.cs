@@ -239,7 +239,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                 var rabbitHosts = new List<string>
         {
            _configuration["RabbitMQ:TrainHosts:0"],
-            _configuration["RabbitMQ:TrainHosts:1"],
+           _configuration["RabbitMQ:TrainHosts:1"],
            _configuration["RabbitMQ:TrainHosts:2"],
            _configuration["RabbitMQ:TrainHosts:3"]
         };
