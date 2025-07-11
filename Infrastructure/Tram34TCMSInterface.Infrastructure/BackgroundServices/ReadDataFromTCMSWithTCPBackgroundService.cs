@@ -2043,6 +2043,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
                     }
 
                     await HandleServerAsync(_client, _stream, stoppingToken);
+                  await Task.Delay(int.Parse(configuration["TCP:delayToRabbit"]));
                 }
                 catch (Exception ex)
                 {
