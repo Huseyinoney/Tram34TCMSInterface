@@ -165,7 +165,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                     {
                         mongoDBTrainConfigurationCacheService.SaveTrainInformationToCache(currentTrain.ID);
                         logService.TrainId = currentTrain.ID;
-                        await logService.SendLogAsync<EventLog>(logFactory.CreateEventLog("Kuplaj Bilgisi TCMS'ten Alındı","TCMSInterface","","",""));
+                        await logService.SendLogAsync<EventLog>(logFactory.CreateEventLog("Kuplaj Bilgisi TCMS'ten Alındı", "TCMSInterface", "", "", ""));
                     }
 
 
@@ -212,7 +212,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
 
         public async Task<bool> SendTakoMeterPulseDataToTakoReadExchange(TrainData data)
         {
-            
+
             try
             {
                 await semaphoreSlim.WaitAsync();
@@ -246,7 +246,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
 
                 // Gönderim görevlerini oluştur
                 var tasks = rabbitHosts.Select(async host =>
-                  await RabbitMQService.PublishMessage(
+                await RabbitMQService.PublishMessage(
                         host,
                         RabbitMQConstant.TakoReadExchangeName,
                         "fanout",
@@ -259,9 +259,9 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                 // Tüm görevleri aynı anda başlat ve bitene kadar bekle
                 var result = await Task.WhenAll(tasks);
 
-                
 
-               // Console.WriteLine("Pulse verisi tüm trenlere eşzamanlı gönderildi.");
+
+                 Console.WriteLine("Pulse verisi tüm trenlere eşzamanlı gönderildi.");
 
                 return true;
             }
