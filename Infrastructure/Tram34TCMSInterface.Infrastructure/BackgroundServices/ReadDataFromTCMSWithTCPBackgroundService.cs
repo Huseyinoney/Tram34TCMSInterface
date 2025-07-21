@@ -2025,7 +2025,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
                 {
                     if (!isConnected || _client == null || !_client.Connected || !IsSocketConnected(_client.Client))
                     {
-                        CleanupConnection();
+                       // CleanupConnection();
 
                         var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                         socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
@@ -2043,7 +2043,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
                     }
 
                     await HandleServerAsync(_client, _stream, stoppingToken);
-                  await Task.Delay(int.Parse(configuration["TCP:delayToRabbit"]));
+                    await Task.Delay(int.Parse(configuration["TCP:delayToRabbit"]));
                 }
                 catch (Exception ex)
                 {
@@ -2127,7 +2127,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
             var remoteEndPoint = client.Client.RemoteEndPoint as IPEndPoint;
             const int LENGTH_HEADER_SIZE = 4;
             var buffer = new List<byte>();
-            var readBuffer = new byte[1300];
+            var readBuffer = new byte[1250];
 
             try
             {
@@ -2158,7 +2158,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
 
                         int messageLength = System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(buffer.GetRange(0, LENGTH_HEADER_SIZE).ToArray());
 
-                        if (messageLength <= 0 || messageLength > 1024 * 1024)
+                        if (messageLength <= 0 || messageLength > 1300)
                         {
                             Console.WriteLine($"Uyarı: Geçersiz mesaj uzunluğu {messageLength}. Buffer temizleniyor.");
                             await DiscardUntilNewlineAsync(stream, buffer, stoppingToken);
@@ -2242,7 +2242,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
             catch (Exception ex)
             {
                 Console.WriteLine($"Veri işleme hatası: {ex.Message}");
-                CleanupConnection();
+                //CleanupConnection();
             }
         }
 
@@ -2314,5 +2314,3 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
         }
     }
 }
-
-

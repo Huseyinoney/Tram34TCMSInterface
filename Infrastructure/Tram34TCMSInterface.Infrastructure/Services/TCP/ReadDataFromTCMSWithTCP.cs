@@ -35,7 +35,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
         //bu method kullanım dışı
         public async Task<byte[]> ReadDataFromTCMS(NetworkStream stream)
         {
-            byte[] buffer = new byte[4096];
+            byte[] buffer = new byte[1500];
             int bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length);
             return buffer[..bytesRead];
         }

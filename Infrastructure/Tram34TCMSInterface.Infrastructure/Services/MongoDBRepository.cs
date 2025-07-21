@@ -22,7 +22,8 @@ namespace Tram34TCMSInterface.Infrastructure.Services
             }
             catch (Exception ex)
             {
-                throw;
+                Console.WriteLine(ex.ToString());
+                return null;
             }
         }
     }
