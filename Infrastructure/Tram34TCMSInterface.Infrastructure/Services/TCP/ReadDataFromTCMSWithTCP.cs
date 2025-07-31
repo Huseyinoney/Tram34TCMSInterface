@@ -65,6 +65,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
+                logService.SendLogAsync<ErrorLog>(logFactory.CreateErrorLog($"{ex.Message}","TCMSInterface","Software",""));
                 return null;
             }
         }
@@ -124,7 +125,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
 
                 if (result)
                 {
-                    Console.WriteLine($"Yeni veri gönderildi: {jsonOutput}");
+                    Console.WriteLine($" \nYeni veri gönderildi: {jsonOutput}\n");
                     mongoDBTrainConfigurationCacheService.SaveTrainInformationToCache(currentTrain.ID);
                     logService.TrainId = currentTrain.ID;
                     logService.SendLogAsync<EventLog>(
@@ -188,7 +189,9 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
                     "",
                     pulseJson,
                     ManagementEnum.Live);
-                Console.WriteLine($"Pulse değeri gönderildi: {pulseJson}\n");
+                Console.WriteLine($"\nPulse değeri gönderildi: {pulseJson}\n");
+                logService.SendLogAsync<EventLog>(
+                       logFactory.CreateEventLog("Pulse Değeri TakoRead Kuyruğuna Gönderildi","TCMSInterface","","",""));
                 return true;
             }
             catch

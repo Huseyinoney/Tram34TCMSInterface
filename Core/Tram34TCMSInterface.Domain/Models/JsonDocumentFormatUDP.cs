@@ -23,10 +23,10 @@ namespace Tram34TCMSInterface.Domain.Models
             [JsonPropertyName("TachoMeterPulse")]
             public bool TachoMeterPulse { get; set; }
 
-            [JsonPropertyName("Date")]
+            [JsonPropertyName("vDate")]
             public string Date { get; set; }
 
-            [JsonPropertyName("Time")]
+            [JsonPropertyName("vTime")]
             public string Time { get; set; }
 
             [JsonPropertyName("CouplingTrainsId")]
