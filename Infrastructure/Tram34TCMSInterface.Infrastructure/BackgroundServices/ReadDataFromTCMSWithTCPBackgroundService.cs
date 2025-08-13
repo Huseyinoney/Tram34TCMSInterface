@@ -55,14 +55,16 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
                 {
                     if (!isConnected || _client == null || !_client.Connected || !IsSocketConnected(_client.Client))
                     {
-                       // CleanupConnection();
-
+                        CleanupConnection();
+                        Console.WriteLine("Döndü");
                         var socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                         socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                         socket.Bind(new IPEndPoint(localIPAddress, localPort));
 
-                        _client = new TcpClient { Client = socket };
+                        _client = new TcpClient { Client = socket};
+                        Console.WriteLine("ConnectAsync a gidiyor");
                         await _client.ConnectAsync(remoteIPAddress, remotePort, stoppingToken);
+                        Console.WriteLine("ConnectAsyncdan çıktı");
                         _stream = _client.GetStream();
                         isConnected = true;
 
@@ -468,12 +470,18 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
                     logService.SendLogAsync<EventLog>(logFactory.CreateEventLog("TCMS'e Veri Paketi Gönderildi.", "TCMSInterface", GetLocalIPAddress(), "Socket", GetLocalIPAddress()));
 
                 }
+                catch(ObjectDisposedException ex)
+                {
+                    CleanupConnection();
+                    throw new Exception(ex.Message);
+                }
                 catch (Exception ex)
                 {
 
                     Console.WriteLine("\nGönderim hatası: " + ex.Message+"\n");
                     logService.SendLogAsync<ErrorLog>(logFactory.CreateErrorLog("\nGönderim hatası: " + ex.Message + "\n", "TCMSInterface", "Software", GetLocalIPAddress()));
-                    break;
+                    //break;
+                    throw new Exception(ex.Message);
                 }
 
                 await Task.Delay(500, cancellationToken);
