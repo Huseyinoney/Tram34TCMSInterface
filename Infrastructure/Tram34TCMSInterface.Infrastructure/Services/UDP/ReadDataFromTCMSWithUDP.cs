@@ -158,7 +158,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
 
                 if (isTrainChanged || isCoupledTrainIdsChanged || isMasterTrainIdChanged)
                 {
-                    Console.WriteLine($"Yeni veri gönderildi: {jsonOutput}");
+                    Console.WriteLine($"Yeni veri gönderildi: \n {jsonOutput}");
                     var result = await RabbitMQService.PublishMessage(
                         RabbitMQConstant.RabbitMQHost,
                         RabbitMQConstant.CoupledTrainsExchangeName,

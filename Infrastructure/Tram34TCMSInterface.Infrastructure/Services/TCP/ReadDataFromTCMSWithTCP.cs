@@ -125,7 +125,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
 
                 if (result)
                 {
-                    Console.WriteLine($" \nYeni veri gönderildi: {jsonOutput}\n");
+                    Console.WriteLine($" \nYeni veri gönderildi: \n {jsonOutput}\n");
                     mongoDBTrainConfigurationCacheService.SaveTrainInformationToCache(currentTrain.ID);
                     logService.TrainId = currentTrain.ID;
                     logService.SendLogAsync<EventLog>(
