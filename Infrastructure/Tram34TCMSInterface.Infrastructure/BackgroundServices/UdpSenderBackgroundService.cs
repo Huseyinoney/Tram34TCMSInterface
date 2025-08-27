@@ -300,7 +300,7 @@ public class UdpSenderBackgroundService : BackgroundService
                 Console.WriteLine(_doorsOpen ? "Kapılar açıldı." : "Kapılar kapandı.");
             }
 
-            Thread.Sleep(500);
+            Thread.Sleep(90); // 500dü
         }
     }
 

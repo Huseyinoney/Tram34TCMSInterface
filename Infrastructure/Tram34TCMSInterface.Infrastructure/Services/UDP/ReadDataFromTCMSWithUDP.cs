@@ -253,15 +253,16 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                         "",
                         pulseJson,
                         ManagementEnum.Live
+
                     )
                 );
-
+                Console.WriteLine(data.TachoMeterPulse);
                 // Tüm görevleri aynı anda başlat ve bitene kadar bekle
                 var result = await Task.WhenAll(tasks);
 
 
 
-                 Console.WriteLine("Pulse verisi tüm trenlere eşzamanlı gönderildi.");
+                Console.WriteLine($"Pulse verisi tüm trenlere eşzamanlı gönderildi.{data.TachoMeterPulse}");
 
                 return true;
             }
@@ -275,8 +276,6 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                 semaphoreSlim.Release();
             }
         }
-
-
 
         //public async Task<bool> SendTakoMeterPulseDataToTakoReadExchange(TrainData data)
         //{
