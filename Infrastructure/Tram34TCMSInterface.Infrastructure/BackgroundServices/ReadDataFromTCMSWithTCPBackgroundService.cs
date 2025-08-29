@@ -160,7 +160,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
                         _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                         _client.Client.Bind(new IPEndPoint(localIPAddress, localPort));
 
-                        using var cts = new CancellationTokenSource(500);
+                        using var cts = new CancellationTokenSource(int.Parse(configuration["TCP:Wait"]));
                         await _client.ConnectAsync(remoteIPAddress, remotePort, cts.Token);
 
                         isConnected = true;
@@ -213,15 +213,6 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
             }
         }
 
-
-
-
-
-
-
-
-
-
         private bool IsSocketConnected(Socket socket)
         {
             try
@@ -234,30 +225,54 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
             }
         }
 
+
         private void CleanupConnection()
         {
-            try { _stream?.Close(); } catch { }
-            try { _stream?.Dispose(); } catch { }
+            try { _stream?.Close(); _stream?.Dispose(); _stream = null; } catch { }
 
             try
             {
-                if (_client?.Client?.Connected == true)
+                if (_client?.Connected == true)
                 {
-                    //  _client.Client.Shutdown(SocketShutdown.Both);
+                    // TIME_WAIT önlemek için RST gönder
+                    _client.Client.LingerState = new LingerOption(true, 0);
+                    _client.Client.Shutdown(SocketShutdown.Both);
                     _client.Client.Close();
                 }
             }
             catch { }
 
-            try { _client?.Close(); } catch { }
-            try { _client?.Dispose(); } catch { }
-
-
-            _stream = null;
-            _client = null;
+            try { _client?.Close(); _client?.Dispose(); _client = null; } catch { }
 
             isConnected = false;
         }
+
+        //private void CleanupConnection()
+        //{
+        //    try { _stream?.Close(); } catch { }
+        //    try { _stream?.Dispose(); } catch { }
+
+        //    try
+        //    {
+        //        if (_client?.Client?.Connected == true)
+        //        {
+        //            _client.Client.Shutdown(SocketShutdown.Both);
+        //            _client.Client.Close();
+        //        }
+        //    }
+        //    catch { }
+
+        //    try { _client?.Close(); } catch { }
+        //    try { _client?.Dispose(); } catch { }
+
+
+        //    _stream = null;
+        //    _client = null;
+
+        //    isConnected = false;
+
+        //    KillTimeWaitSockets(5000);
+        //}
 
 
         private async Task DiscardUntilNewlineAsync(NetworkStream stream, List<byte> buffer, CancellationToken token)
@@ -357,6 +372,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
                         if (bytesRead == 0)
                         {
                             Console.WriteLine("\nBağlantı kapandı.\n");
+
                             CleanupConnection();
                             break;
                         }
@@ -508,37 +524,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
             return false;
         }
 
-        public static void KillPort(int port)
-        {
-            try
-            {
-                var psi = new ProcessStartInfo
-                {
-                    FileName = "/bin/bash",
-                    Arguments = $"-c \"sudo kill -9 $(sudo lsof -t -i TCP:{port})\"",
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                };
 
-                using var process = Process.Start(psi);
-                process.WaitForExit();
-
-                string output = process.StandardOutput.ReadToEnd();
-                string error = process.StandardError.ReadToEnd();
-
-                if (!string.IsNullOrWhiteSpace(output))
-                    Console.WriteLine($"Output: {output}");
-
-                if (!string.IsNullOrWhiteSpace(error))
-                    Console.WriteLine($"Error: {error}");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Port kill hatası: {ex.Message}");
-            }
-        }
 
         private string GetLocalIPAddress()
         {
