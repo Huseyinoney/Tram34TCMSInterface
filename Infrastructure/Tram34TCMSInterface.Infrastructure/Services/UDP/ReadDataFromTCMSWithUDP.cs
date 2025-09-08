@@ -101,6 +101,15 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
             }
         }
 
+        // Önceki tren ve kuplaj bilgilerini saklamak için sınıf
+        public class PreviousTrainState
+        {
+            public Train Train { get; set; }
+            public List<string> CoupledIds { get; set; }
+        }
+
+        private PreviousTrainState previousTrainState;
+
         public async Task<bool> SendCoupledDataToCoupleExchange(Tram34TCMSInterface.Domain.Models.JsonDocumentFormatUDP.TrainData data)
         {
             if (data == null)
@@ -112,102 +121,219 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
             try
             {
                 var masterTrainId = data.MasterTrainId;
+                var currentTrain = data.TRAIN;
 
-                // Şu anki trenin bilgilerini alıyoruz.
-                var currentTrain = data.TRAIN;  // Burada `TRAIN` zaten tek bir nesne olduğu için doğrudan erişim yapılır.
-
-                // Eğer şu anki tren kuplajda değilse, işleme devam edilmez
                 if (!currentTrain.IsTrainCoupled)
                 {
                     Console.WriteLine("Şu anki tren kuplajda değil.");
                     return false;
                 }
 
-
                 var coupledTrainIds = new[]
-{
-                    data.CouplingTrainsId.CouplingTrainsIdXX1,
-                    data.CouplingTrainsId.CouplingTrainsIdXX2,
-                    data.CouplingTrainsId.CouplingTrainsIdXX3,
-                    data.CouplingTrainsId.CouplingTrainsIdXX4
-                }
-            .Where(id => !string.IsNullOrEmpty(id))
-            .ToList();
+                {
+            data.CouplingTrainsId.CouplingTrainsIdXX1,
+            data.CouplingTrainsId.CouplingTrainsIdXX2,
+            data.CouplingTrainsId.CouplingTrainsIdXX3,
+            data.CouplingTrainsId.CouplingTrainsIdXX4
+        }
+                .Where(id => !string.IsNullOrEmpty(id))
+                .ToList();
 
-                //currentTrain.ID = "Train " + currentTrain.ID.ToString();
-                // Şu anki trenin bilgilerini ve kuplajdaki trenlerin ID'lerini içeriyor
                 var resultWithMasterTrain = new
                 {
                     MasterTrainId = masterTrainId,
                     CurrentTrain = new
                     {
-                        currentTrain.ID,  // Şu anki trenin ID'si
-                        currentTrain.IP,  // Şu anki trenin IP'si
-                        currentTrain.TrainCoupledOrder,// Kuplaj sırası
+                        currentTrain.ID,
+                        currentTrain.IP,
+                        currentTrain.TrainCoupledOrder,
                         currentTrain.IsTrainCoupled,
                         currentTrain.Cab_A_Active,
                         currentTrain.Cab_B_Active,
                         currentTrain.Cab_A_KeyStatus,
                         currentTrain.Cab_B_KeyStatus
                     },
-                    CouplingTrainsIds = coupledTrainIds  // Kuplajdaki trenlerin ID'leri
+                    CouplingTrainsIds = coupledTrainIds
                 };
 
-                // JSON çıktısı oluşturma
                 string jsonOutput = JsonSerializer.Serialize(resultWithMasterTrain, jsonSerializerOptions);
 
-                // Eski veri ile karşılaştırma yapılması
-                if (!_previousTrainData.Any() || !AreTrainsEqual(currentTrain, _previousTrainData.First() as Train))
+                // Eski veri ile karşılaştırma
+                bool isEqual = AreTrainsEqual(currentTrain, previousTrainState?.Train, coupledTrainIds, previousTrainState?.CoupledIds);
+
+                if (!isEqual)
                 {
                     Console.WriteLine($"Yeni veri gönderildi: {jsonOutput}");
-                    var result = await RabbitMQService.PublishMessage(RabbitMQConstant.RabbitMQHost, RabbitMQConstant.CoupledTrainsExchangeName, "fanout", "", jsonOutput, ManagementEnum.Live);
+                    var result = await RabbitMQService.PublishMessage(
+                        RabbitMQConstant.RabbitMQHost,
+                        RabbitMQConstant.CoupledTrainsExchangeName,
+                        "fanout",
+                        "",
+                        jsonOutput,
+                        ManagementEnum.Live
+                    );
+
                     if (result)
                     {
                         mongoDBTrainConfigurationCacheService.SaveTrainInformationToCache(currentTrain.ID);
                         logService.TrainId = currentTrain.ID;
-                        await logService.SendLogAsync<EventLog>(logFactory.CreateEventLog("Kuplaj Bilgisi TCMS'ten Alındı", "TCMSInterface", "", "", ""));
+                         logService.SendLogAsync<EventLog>(
+                            logFactory.CreateEventLog("Kuplaj Bilgisi TCMS'ten Alındı", "TCMSInterface", "", "", "")
+                        );
                     }
 
+                    // Yeni state’i kaydet
+                    previousTrainState = new PreviousTrainState
+                    {
+                        Train = currentTrain,
+                        CoupledIds = coupledTrainIds
+                    };
 
-                    // Eski veriyi güncelle
-                    _previousTrainData = new List<object> { currentTrain };
-
-                    return true;  // Yeni veri gönderildi
+                    return true;
                 }
                 else
                 {
-                    //Console.WriteLine("Veri değişmedi, gönderilmiyor.");
-                    return false;  // Veri değişmedi
+                    return false; // Veri değişmedi
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Hata oluştu: {ex.Message}");
-                return false;  // Hata durumunda false döndür
+                return false;
             }
         }
 
-        // Trenlerin eşitliğini kontrol eden yardımcı metod
-        private bool AreTrainsEqual(Train currentTrain, Train previousTrain)
+        // Tren ve kuplaj listesini karşılaştıran metod
+        private bool AreTrainsEqual(Train currentTrain, Train previousTrain, List<string> currentCoupledIds, List<string> previousCoupledIds)
         {
-            return currentTrain.ID == previousTrain.ID &&
-                   currentTrain.IP == previousTrain.IP &&
-                   currentTrain.TrainCoupledOrder == previousTrain.TrainCoupledOrder &&
-                   currentTrain.Cab_A_Active == previousTrain.Cab_A_Active &&
-                   currentTrain.Cab_B_Active == previousTrain.Cab_B_Active &&
-                   currentTrain.Cab_A_KeyStatus == previousTrain.Cab_A_KeyStatus &&
-                   currentTrain.Cab_B_KeyStatus == previousTrain.Cab_B_KeyStatus &&
-                   currentTrain.IsTrainCoupled == previousTrain.IsTrainCoupled;
-            //currentTrain.AllDoorOpen == previousTrain.AllDoorOpen &&
-            //currentTrain.AllDoorClose == previousTrain.AllDoorClose &&
-            //currentTrain.AllDoorReleased == previousTrain.AllDoorReleased &&
-            //currentTrain.AllLeftDoorOpen == previousTrain.AllLeftDoorOpen &&
-            //currentTrain.AllRightDoorOpen == previousTrain.AllRightDoorOpen &&
-            //currentTrain.AllLeftDoorClose == previousTrain.AllLeftDoorClose &&
-            //currentTrain.AllRightDoorClose == previousTrain.AllRightDoorClose &&
-            //currentTrain.AllLeftDoorReleased == previousTrain.AllLeftDoorReleased &&
-            //currentTrain.AllRightDoorReleased == previousTrain.AllRightDoorReleased;
+            if (previousTrain == null) return false;
+
+            bool trainEqual =
+                currentTrain.ID == previousTrain.ID &&
+                currentTrain.IP == previousTrain.IP &&
+                currentTrain.TrainCoupledOrder == previousTrain.TrainCoupledOrder &&
+                currentTrain.IsTrainCoupled == previousTrain.IsTrainCoupled &&
+                currentTrain.Cab_A_Active == previousTrain.Cab_A_Active &&
+                currentTrain.Cab_B_Active == previousTrain.Cab_B_Active &&
+                currentTrain.Cab_A_KeyStatus == previousTrain.Cab_A_KeyStatus &&
+                currentTrain.Cab_B_KeyStatus == previousTrain.Cab_B_KeyStatus;
+
+            bool couplingEqual = Enumerable.SequenceEqual(currentCoupledIds ?? new List<string>(), previousCoupledIds ?? new List<string>());
+
+            return trainEqual && couplingEqual;
         }
+
+
+
+
+
+        //        public async Task<bool> SendCoupledDataToCoupleExchange(Tram34TCMSInterface.Domain.Models.JsonDocumentFormatUDP.TrainData data)
+        //        {
+        //            if (data == null)
+        //            {
+        //                Console.WriteLine("Geçersiz veri: Null veri alındı.");
+        //                return false;
+        //            }
+
+        //            try
+        //            {
+        //                var masterTrainId = data.MasterTrainId;
+
+        //                // Şu anki trenin bilgilerini alıyoruz.
+        //                var currentTrain = data.TRAIN;  // Burada `TRAIN` zaten tek bir nesne olduğu için doğrudan erişim yapılır.
+
+        //                // Eğer şu anki tren kuplajda değilse, işleme devam edilmez
+        //                if (!currentTrain.IsTrainCoupled)
+        //                {
+        //                    Console.WriteLine("Şu anki tren kuplajda değil.");
+        //                    return false;
+        //                }
+
+
+        //                var coupledTrainIds = new[]
+        //{
+        //                    data.CouplingTrainsId.CouplingTrainsIdXX1,
+        //                    data.CouplingTrainsId.CouplingTrainsIdXX2,
+        //                    data.CouplingTrainsId.CouplingTrainsIdXX3,
+        //                    data.CouplingTrainsId.CouplingTrainsIdXX4
+        //                }
+        //            .Where(id => !string.IsNullOrEmpty(id))
+        //            .ToList();
+
+        //                //currentTrain.ID = "Train " + currentTrain.ID.ToString();
+        //                // Şu anki trenin bilgilerini ve kuplajdaki trenlerin ID'lerini içeriyor
+        //                var resultWithMasterTrain = new
+        //                {
+        //                    MasterTrainId = masterTrainId,
+        //                    CurrentTrain = new
+        //                    {
+        //                        currentTrain.ID,  // Şu anki trenin ID'si
+        //                        currentTrain.IP,  // Şu anki trenin IP'si
+        //                        currentTrain.TrainCoupledOrder,// Kuplaj sırası
+        //                        currentTrain.IsTrainCoupled,
+        //                        currentTrain.Cab_A_Active,
+        //                        currentTrain.Cab_B_Active,
+        //                        currentTrain.Cab_A_KeyStatus,
+        //                        currentTrain.Cab_B_KeyStatus
+        //                    },
+        //                    CouplingTrainsIds = coupledTrainIds  // Kuplajdaki trenlerin ID'leri
+        //                };
+
+        //                // JSON çıktısı oluşturma
+        //                string jsonOutput = JsonSerializer.Serialize(resultWithMasterTrain, jsonSerializerOptions);
+
+        //                // Eski veri ile karşılaştırma yapılması
+        //                if (!_previousTrainData.Any() || !AreTrainsEqual(currentTrain, _previousTrainData.First() as Train))
+        //                {
+        //                    Console.WriteLine($"Yeni veri gönderildi: {jsonOutput}");
+        //                    var result = await RabbitMQService.PublishMessage(RabbitMQConstant.RabbitMQHost, RabbitMQConstant.CoupledTrainsExchangeName, "fanout", "", jsonOutput, ManagementEnum.Live);
+        //                    if (result)
+        //                    {
+        //                        mongoDBTrainConfigurationCacheService.SaveTrainInformationToCache(currentTrain.ID);
+        //                        logService.TrainId = currentTrain.ID;
+        //                        await logService.SendLogAsync<EventLog>(logFactory.CreateEventLog("Kuplaj Bilgisi TCMS'ten Alındı", "TCMSInterface", "", "", ""));
+        //                    }
+
+
+        //                    // Eski veriyi güncelle
+        //                    _previousTrainData = new List<object> { currentTrain };
+
+        //                    return true;  // Yeni veri gönderildi
+        //                }
+        //                else
+        //                {
+        //                    //Console.WriteLine("Veri değişmedi, gönderilmiyor.");
+        //                    return false;  // Veri değişmedi
+        //                }
+        //            }
+        //            catch (Exception ex)
+        //            {
+        //                Console.WriteLine($"Hata oluştu: {ex.Message}");
+        //                return false;  // Hata durumunda false döndür
+        //            }
+        //        }
+
+        //        // Trenlerin eşitliğini kontrol eden yardımcı metod
+        //        private bool AreTrainsEqual(Train currentTrain, Train previousTrain)
+        //        {
+        //            return currentTrain.ID == previousTrain.ID &&
+        //                   currentTrain.IP == previousTrain.IP &&
+        //                   currentTrain.TrainCoupledOrder == previousTrain.TrainCoupledOrder &&
+        //                   currentTrain.Cab_A_Active == previousTrain.Cab_A_Active &&
+        //                   currentTrain.Cab_B_Active == previousTrain.Cab_B_Active &&
+        //                   currentTrain.Cab_A_KeyStatus == previousTrain.Cab_A_KeyStatus &&
+        //                   currentTrain.Cab_B_KeyStatus == previousTrain.Cab_B_KeyStatus &&
+        //                   currentTrain.IsTrainCoupled == previousTrain.IsTrainCoupled;
+        //            //currentTrain.AllDoorOpen == previousTrain.AllDoorOpen &&
+        //            //currentTrain.AllDoorClose == previousTrain.AllDoorClose &&
+        //            //currentTrain.AllDoorReleased == previousTrain.AllDoorReleased &&
+        //            //currentTrain.AllLeftDoorOpen == previousTrain.AllLeftDoorOpen &&
+        //            //currentTrain.AllRightDoorOpen == previousTrain.AllRightDoorOpen &&
+        //            //currentTrain.AllLeftDoorClose == previousTrain.AllLeftDoorClose &&
+        //            //currentTrain.AllRightDoorClose == previousTrain.AllRightDoorClose &&
+        //            //currentTrain.AllLeftDoorReleased == previousTrain.AllLeftDoorReleased &&
+        //            //currentTrain.AllRightDoorReleased == previousTrain.AllRightDoorReleased;
+        //        }
 
 
         public async Task<bool> SendTakoMeterPulseDataToTakoReadExchange(TrainData data)
@@ -256,13 +382,13 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
 
                     )
                 );
-                Console.WriteLine(data.TachoMeterPulse);
+                //Console.WriteLine(data.TachoMeterPulse);
                 // Tüm görevleri aynı anda başlat ve bitene kadar bekle
                 var result = await Task.WhenAll(tasks);
 
 
 
-                Console.WriteLine($"Pulse verisi tüm trenlere eşzamanlı gönderildi.{data.TachoMeterPulse}");
+              //  Console.WriteLine($"Pulse verisi tüm trenlere eşzamanlı gönderildi.{data.TachoMeterPulse}");
 
                 return true;
             }

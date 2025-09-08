@@ -121,7 +121,7 @@ namespace Tram34TCMSInterface.Infrastructure.RabbitMQ
                 var body = Encoding.UTF8.GetBytes(message);
                 var properties = new BasicProperties() { Persistent = true };
                 await channel.BasicPublishAsync(exchange: exchangeName, routingKey: routingKey, mandatory: false, basicProperties: properties, body: body);
-                Console.WriteLine($"[{host}] -> [{exchangeName}] mesaj gönderildi.");
+               // Console.WriteLine($"[{host}] -> [{exchangeName}] mesaj gönderildi.");
                 return true;
             }
             catch (Exception ex)
