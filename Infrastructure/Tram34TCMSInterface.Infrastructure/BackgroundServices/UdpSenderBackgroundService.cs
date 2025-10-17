@@ -274,7 +274,7 @@ public class UdpSenderBackgroundService : BackgroundService
         }
     }
 
-    private void MonitorKeyPress()
+    private async void MonitorKeyPress()
     {
         while (true)
         {
@@ -316,20 +316,22 @@ public class UdpSenderBackgroundService : BackgroundService
                     _doorsOpen = !_doorsOpen;
                 }
                 Console.WriteLine(_doorsOpen ? "Kapılar açıldı." : "Kapılar kapandı.");
-                Thread.Sleep(200);
+                // Thread.Sleep(200);
+                await Task.Delay(200);
             }
 
             // Kuplaj toggle (1-4)
             if (IsKeyDown(ConsoleKey.D1))
-                ToggleCoupling("Train 2");
+                ToggleCoupling("Train 1");
             if (IsKeyDown(ConsoleKey.D2))
-                ToggleCoupling("Train 7");
+                ToggleCoupling("Train 2");
             if (IsKeyDown(ConsoleKey.D3))
                 ToggleCoupling("Train 16");
             if (IsKeyDown(ConsoleKey.D4))
-                ToggleCoupling("Train 28");
+                ToggleCoupling("Train 3");
 
-            Thread.Sleep(90);
+            //Thread.Sleep(90);
+            await Task.Delay(90);
         }
     }
 
