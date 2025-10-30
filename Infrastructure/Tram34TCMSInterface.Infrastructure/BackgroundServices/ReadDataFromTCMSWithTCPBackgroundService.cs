@@ -35,91 +35,6 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
             this.logService = logService;
         }
 
-        //protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-        //{
-        //    string? ip = configuration["TCP:Address"];
-        //    string? portStr = configuration["TCP:SourcePort"];
-        //    string? localIpStr = configuration["TCP:LocalIP"];
-        //    string? localPortStr = configuration["TCP:LocalPort"];
-
-        //    if (string.IsNullOrWhiteSpace(ip) || string.IsNullOrWhiteSpace(localIpStr))
-        //        throw new ArgumentException("TCP IP adresleri boş olamaz.");
-
-        //    if (!int.TryParse(portStr, out int remotePort) || !int.TryParse(localPortStr, out int localPort))
-        //        throw new ArgumentException("TCP port bilgileri hatalı.");
-
-        //    if (!IPAddress.TryParse(ip, out var remoteIPAddress) || !IPAddress.TryParse(localIpStr, out var localIPAddress))
-        //        throw new ArgumentException("IP adres formatı hatalı.");
-
-        //    while (!stoppingToken.IsCancellationRequested)
-        //    {
-        //        try
-        //        {
-        //            if (!isConnected || _client == null || !_client.Connected || !IsSocketConnected(_client.Client))
-        //            {
-        //                CleanupConnection();
-
-
-        //                socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        //                socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-
-
-        //                socket.NoDelay = true;
-        //                socket.LingerState = new LingerOption(false, 0);
-        //                try
-        //                {
-        //                    socket.Bind(new IPEndPoint(localIPAddress, localPort));
-        //                }
-        //                catch (SocketException ex)
-        //                {
-        //                    Console.WriteLine($"Bind hatası: {ex.Message} (Hata Kodu: {ex.SocketErrorCode})");
-        //                    throw;
-        //                }
-
-        //                Console.WriteLine("bind ı geçtim");
-
-
-        //                _client = new TcpClient { Client = socket };
-        //                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-        //                Console.WriteLine("Connection'a geldim");
-        //                await _client.ConnectAsync(remoteIPAddress, remotePort, cts.Token);
-
-        //                isConnected = true;
-
-        //                _stream = _client.GetStream();
-
-
-        //                Console.WriteLine($"\nBağlandı: {localIPAddress}:{localPort} → {remoteIPAddress}:{remotePort}\n");
-        //                logService.SendLogAsync<EventLog>(logFactory.CreateEventLog($"\nBağlandı: {localIPAddress}:{localPort} → {remoteIPAddress}:{remotePort}\n", "TCMSInterface", GetLocalIPAddress(), "Socket Connection Status", GetLocalIPAddress()));
-
-        //                Yazma task’i başlat
-        //                _ = Task.Run(() => HandleWriteAsync(_stream, stoppingToken), stoppingToken);
-        //            }
-
-        //            await HandleServerAsync(_client, _stream, stoppingToken);
-        //            await Task.Delay(int.Parse(configuration["TCP:delayToRabbit"]));
-        //        }
-        //        catch (SocketException ex)
-        //        {
-        //            Console.WriteLine($"\nBağlantı hatası 1: {ex.Message}\n");
-        //            logService.SendLogAsync<ErrorLog>(logFactory.CreateErrorLog($"\nBağlantı hatası: {ex.Message}\n", "TCMSInterface", "Software", GetLocalIPAddress()));
-        //            CleanupConnection();
-        //            await Task.Delay(500, stoppingToken);
-        //        }
-
-
-        //        catch (Exception ex)
-        //        {
-        //            Console.WriteLine($"\nBağlantı hatası: {ex.Message}\n");
-        //            logService.SendLogAsync<ErrorLog>(logFactory.CreateErrorLog($"\nBağlantı hatası: {ex.Message}\n", "TCMSInterface", "Software", GetLocalIPAddress()));
-        //            CleanupConnection();
-        //            await Task.Delay(500, stoppingToken);
-        //        }
-        //    }
-        //}
-
-
-        //TEST İÇİN
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
@@ -143,18 +58,8 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
                 {
                     if (!isConnected || _client == null || !_client.Connected || !IsSocketConnected(_client.Client))
                     {
-                        // Mevcut bağlantıyı temizle
+
                         CleanupConnection();
-
-                        ////Yeni socket oluştur ve bind et
-                        //socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                        //socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        //socket.NoDelay = true;
-                        //socket.LingerState = new LingerOption(true, 0);
-                        //socket.Bind(new IPEndPoint(localIPAddress, localPort));
-
-                        //TcpClient oluştur ve bağlan
-                        //_client = new TcpClient { Client = socket };
 
                         _client = new TcpClient(AddressFamily.InterNetwork);
                         _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
@@ -247,34 +152,6 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
             isConnected = false;
         }
 
-        //private void CleanupConnection()
-        //{
-        //    try { _stream?.Close(); } catch { }
-        //    try { _stream?.Dispose(); } catch { }
-
-        //    try
-        //    {
-        //        if (_client?.Client?.Connected == true)
-        //        {
-        //            _client.Client.Shutdown(SocketShutdown.Both);
-        //            _client.Client.Close();
-        //        }
-        //    }
-        //    catch { }
-
-        //    try { _client?.Close(); } catch { }
-        //    try { _client?.Dispose(); } catch { }
-
-
-        //    _stream = null;
-        //    _client = null;
-
-        //    isConnected = false;
-
-        //    KillTimeWaitSockets(5000);
-        //}
-
-
         private async Task DiscardUntilNewlineAsync(NetworkStream stream, List<byte> buffer, CancellationToken token)
         {
             var discardBuffer = new byte[1];
@@ -320,39 +197,6 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
                 logService.SendLogAsync<ErrorLog>(logFactory.CreateErrorLog($"Discard sırasında hata oluştu: {ex.Message}", "TCMSInterface", "Software", GetLocalIPAddress()));
             }
         }
-        //private async Task DiscardUntilNewlineAsync(NetworkStream stream, List<byte> buffer, CancellationToken token)
-        //{
-        //    var discardBuffer = new byte[1];
-        //    const int maxBytesToDiscard = 2048;
-        //    int bytesDiscarded = 0;
-
-        //    while (!token.IsCancellationRequested && bytesDiscarded < maxBytesToDiscard)
-        //    {
-        //        if (buffer.Count > 0)
-        //        {
-        //            if (buffer[0] == (byte)'\n')
-        //            {
-        //                buffer.RemoveAt(0);
-        //                Console.WriteLine($"\nDiscard: \\n bulundu. {bytesDiscarded} byte atlandı.\n");
-        //                return;
-        //            }
-        //            buffer.RemoveAt(0);
-        //            bytesDiscarded++;
-        //            continue;
-        //        }
-
-        //        int read = await stream.ReadAsync(discardBuffer, 0, 1, token);
-        //        if (read == 0 || discardBuffer[0] == (byte)'\n')
-        //        {
-        //            Console.WriteLine($"\nDiscard: \\n bulundu. {bytesDiscarded} byte atlandı.\n");
-        //            return;
-        //        }
-        //        bytesDiscarded++;
-        //    }
-
-        //    if (bytesDiscarded >= maxBytesToDiscard)
-        //        Console.WriteLine("\nUyarı: \\n bulunamadı, buffer temizleme sınırı aşıldı.\n");
-        //}
 
         private async Task HandleServerAsync(TcpClient client, NetworkStream stream, CancellationToken stoppingToken)
         {
@@ -525,7 +369,6 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
         }
 
 
-
         private string GetLocalIPAddress()
         {
             try
@@ -603,7 +446,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
 
                     Console.WriteLine("\nGönderim hatası: " + ex.Message + "\n");
                     logService.SendLogAsync<ErrorLog>(logFactory.CreateErrorLog("\nGönderim hatası: " + ex.Message + "\n", "TCMSInterface", "Software", GetLocalIPAddress()));
-                    //break;
+
                     CleanupConnection();
                     throw new Exception(ex.Message);
                 }
