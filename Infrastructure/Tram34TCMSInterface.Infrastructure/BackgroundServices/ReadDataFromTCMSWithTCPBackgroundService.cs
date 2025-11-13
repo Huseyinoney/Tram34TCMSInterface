@@ -63,7 +63,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
 
                         _client = new TcpClient(AddressFamily.InterNetwork);
                         _client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-                        _client.Client.Bind(new IPEndPoint(localIPAddress, localPort));
+                        //_client.Client.Bind(new IPEndPoint(localIPAddress, localPort));
 
                         using var cts = new CancellationTokenSource(int.Parse(configuration["TCP:Wait"]));
                         await _client.ConnectAsync(remoteIPAddress, remotePort, cts.Token);
@@ -194,7 +194,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
             catch (Exception ex)
             {
                 Console.WriteLine($"Discard sırasında hata oluştu: {ex.Message}");
-                logService.SendLogAsync<ErrorLog>(logFactory.CreateErrorLog($"Discard sırasında hata oluştu: {ex.Message}", "TCMSInterface", "Software", GetLocalIPAddress()));
+                logService.SendLogAsync<ErrorLog>(logFactory.CreateErrorLog($"Discard sırasında hata oluştu: {ex.Message}", configuration["Log:TCMSSource"], "Software", GetLocalIPAddress()));
             }
         }
 
@@ -224,7 +224,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
                     catch (Exception ex)
                     {
                         Console.WriteLine($"\nOkuma hatası: {ex.Message}\n");
-                        logService.SendLogAsync<ErrorLog>(logFactory.CreateErrorLog($"\nOkuma hatası: {ex.Message}\n", "TCMSInterface", "Software", GetLocalIPAddress()));
+                        logService.SendLogAsync<ErrorLog>(logFactory.CreateErrorLog($"\nOkuma hatası: {ex.Message}\n", configuration["Log:TCMSSource"], "Software", GetLocalIPAddress()));
 
                         break;
                     }
@@ -291,7 +291,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
                         catch (Exception ex)
                         {
                             Console.WriteLine($"\nUyarı: JSON deserialize hatası: {ex.Message}\n");
-                            logService.SendLogAsync<ErrorLog>(logFactory.CreateErrorLog($"\nUyarı: JSON deserialize hatası: {ex.Message}\n", "TCMSInterface", "Software", GetLocalIPAddress()));
+                            logService.SendLogAsync<ErrorLog>(logFactory.CreateErrorLog($"\nUyarı: JSON deserialize hatası: {ex.Message}\n", configuration["Log:TCMSSource"], "Software", GetLocalIPAddress()));
                             buffer.RemoveRange(0, totalMessageSize);
                             continue;
                         }
@@ -323,7 +323,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
             catch (Exception ex)
             {
                 Console.WriteLine($"\nVeri işleme hatası: {ex.Message} \n");
-                logService.SendLogAsync<ErrorLog>(logFactory.CreateErrorLog($"\nVeri işleme hatası: {ex.Message} \n", "TCMSInterface", "Software", GetLocalIPAddress()));
+                logService.SendLogAsync<ErrorLog>(logFactory.CreateErrorLog($"\nVeri işleme hatası: {ex.Message} \n", configuration["Log:TCMSSource"], "Software", GetLocalIPAddress()));
                 CleanupConnection();
             }
         }
@@ -433,7 +433,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
                     await stream.WriteAsync(packet, 0, packet.Length, cancellationToken);
                     Console.WriteLine("\nGönderildi: " + json + "\n");
 
-                    logService.SendLogAsync<EventLog>(logFactory.CreateEventLog("TCMS'e Veri Paketi Gönderildi.", "TCMSInterface", GetLocalIPAddress(), "Socket", GetLocalIPAddress()));
+                    logService.SendLogAsync<EventLog>(logFactory.CreateEventLog("TCMS'e Veri Paketi Gönderildi.", configuration["Log:TCMSSource"], GetLocalIPAddress(), "Socket", GetLocalIPAddress()));
 
                 }
                 catch (ObjectDisposedException ex)
@@ -445,7 +445,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
                 {
 
                     Console.WriteLine("\nGönderim hatası: " + ex.Message + "\n");
-                    logService.SendLogAsync<ErrorLog>(logFactory.CreateErrorLog("\nGönderim hatası: " + ex.Message + "\n", "TCMSInterface", "Software", GetLocalIPAddress()));
+                    logService.SendLogAsync<ErrorLog>(logFactory.CreateErrorLog("\nGönderim hatası: " + ex.Message + "\n", configuration["Log:TCMSSource"], "Software", GetLocalIPAddress()));
 
                     CleanupConnection();
                     throw new Exception(ex.Message);

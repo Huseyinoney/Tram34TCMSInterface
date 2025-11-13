@@ -8,6 +8,7 @@ using Tram34TCMSInterface.Application.Abstractions.TCP;
 using Tram34TCMSInterface.Domain.Log;
 using static Tram34TCMSInterface.Domain.Models.JsonDocumentFormatUDP;
 using Tram34TCMSInterface.Infrastructure.RabbitMQ;
+using Microsoft.Extensions.Configuration;
 
 namespace Tram34TCMSInterface.Infrastructure.Services.TCP
 {
@@ -16,6 +17,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
         private readonly ILogService logService;
         private readonly ILogFactory logFactory;
         private readonly IMongoDBTrainConfigurationCacheService mongoDBTrainConfigurationCacheService;
+        private readonly IConfiguration configuration;
 
         private readonly JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
         {
@@ -23,12 +25,13 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
-        public ReadDataFromTCMSWithTCP(IMongoDBTrainConfigurationCacheService mongoDBTrainConfigurationCacheService, ILogService logService, ILogFactory logFactory)
+        public ReadDataFromTCMSWithTCP(IMongoDBTrainConfigurationCacheService mongoDBTrainConfigurationCacheService, ILogService logService, ILogFactory logFactory, IConfiguration configuration)
         {
 
             this.mongoDBTrainConfigurationCacheService = mongoDBTrainConfigurationCacheService;
             this.logService = logService;
             this.logFactory = logFactory;
+            this.configuration = configuration;
         }
 
 
@@ -65,7 +68,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
-                logService.SendLogAsync<ErrorLog>(logFactory.CreateErrorLog($"{ex.Message}","TCMSInterface","Software",""));
+                logService.SendLogAsync<ErrorLog>(logFactory.CreateErrorLog($"{ex.Message}", configuration["Log:TCMSSource"], "Software",""));
                 return null;
             }
         }
@@ -76,7 +79,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
 
         public async Task<bool> SendCoupledDataToCoupleExchange(TrainData data)
         {
-            if (data == null || !data.TRAIN.IsTrainCoupled)
+            if (data == null /*|| !data.TRAIN.IsTrainCoupled*/)
                 return false;
 
             var masterTrainId = data.MasterTrainId;
@@ -129,7 +132,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
                     mongoDBTrainConfigurationCacheService.SaveTrainInformationToCache(currentTrain.ID);
                     logService.TrainId = currentTrain.ID;
                     logService.SendLogAsync<EventLog>(
-                        logFactory.CreateEventLog("Kuplaj Bilgisi TCMS'ten Alındı", "TCMSInterface", "", "", ""));
+                        logFactory.CreateEventLog("Kuplaj Bilgisi TCMS'ten Alındı", configuration["Log:TCMSSource"], "", "", ""));
                 }
 
                 _previousTrainData = new List<object> { currentTrain };
@@ -191,7 +194,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
                     ManagementEnum.Live);
                 Console.WriteLine($"\nPulse değeri gönderildi: {pulseJson}\n");
                 logService.SendLogAsync<EventLog>(
-                       logFactory.CreateEventLog("Pulse Değeri TakoRead Kuyruğuna Gönderildi","TCMSInterface","","",""));
+                       logFactory.CreateEventLog("Pulse Değeri TakoRead Kuyruğuna Gönderildi", configuration["Log:TCMSSource"], "","",""));
                 return true;
             }
             catch
