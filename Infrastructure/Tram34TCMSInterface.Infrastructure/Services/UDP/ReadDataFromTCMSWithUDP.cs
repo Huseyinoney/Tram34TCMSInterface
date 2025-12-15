@@ -252,10 +252,11 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                 // RabbitMQ host listesi
                 var rabbitHosts = new List<string>
         {
+           //_configuration["RabbitMQ:TrainHosts:0"],
            _configuration["RabbitMQ:TrainHosts:0"],
            _configuration["RabbitMQ:TrainHosts:1"],
-           _configuration["RabbitMQ:TrainHosts:2"],
-          // _configuration["RabbitMQ:TrainHosts:3"]
+           _configuration["RabbitMQ:TrainHosts:2"]
+
         };
 
                 // Gönderim görevlerini oluştur
@@ -276,7 +277,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
 
 
 
-              //  Console.WriteLine($"Pulse verisi tüm trenlere eşzamanlı gönderildi.{data.TachoMeterPulse}");
+                Console.WriteLine($"Pulse verisi tüm trenlere eşzamanlı gönderildi.{data.TachoMeterPulse}");
 
                 return true;
             }
