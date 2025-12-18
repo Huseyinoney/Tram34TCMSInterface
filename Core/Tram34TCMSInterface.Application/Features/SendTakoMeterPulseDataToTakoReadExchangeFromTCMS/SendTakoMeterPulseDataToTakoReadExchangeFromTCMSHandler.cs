@@ -1,11 +1,5 @@
 ﻿using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Tram34TCMSInterface.Application.Abstractions.TCP;
-using Tram34TCMSInterface.Application.Abstractions.UDP;
 
 namespace Tram34TCMSInterface.Application.Features.SendTakoMeterPulseDataToTakoReadExchangeFromTCMS
 {

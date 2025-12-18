@@ -44,6 +44,5 @@ namespace Tram34TCMSInterface.Application.Features.ReadDataFromTCMSWithTCP
         {
             return senderEndPoint.Address.ToString() == _expectedIp /*&& senderEndPoint.Port == _expectedPort*/;
         }
-
     }
 }

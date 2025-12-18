@@ -10,5 +10,7 @@ namespace Tram34TCMSInterface.Application.Abstractions.CacheMemory
     {
         Task<(string Ip, string Port)> GetLoggerServerConfigurationAsync(string TrainId);
         Task<bool> SaveTrainInformationToCache(string trainId);
+
+        public string GetHardware(string trainId);
     }
 }

@@ -12,6 +12,5 @@ namespace Tram34TCMSInterface.Infrastructure.RabbitMQ
         ManagementEnum Management { get; }
         IChannel Channel { get; set; }
         Task ConsumeAsync(IChannel channel);
-
     }
 }

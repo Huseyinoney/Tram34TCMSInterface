@@ -2,23 +2,29 @@
 using Tram34TCMSInterface.Application.Abstractions.CacheMemory;
 using Tram34TCMSInterface.Domain.Log;
 using Tram34TCMSInterface.Application.Abstractions.MongoDB;
-using Tram34TCMSInterface.Application.Abstractions.LogService;
 
 namespace Tram34TCMSInterface.Infrastructure.Repositories.Cache
 {
     public class MongoDbTrainConfigurationCacheService : IMongoDBTrainConfigurationCacheService
     {
-        
+
         private IMemoryCache memoryCache;
         private readonly IMongoDBRepository mongoDBRepository;
         private const string CacheKeyPrefix = "TrainConfig_";
 
         public MongoDbTrainConfigurationCacheService(IMemoryCache memoryCache, IMongoDBRepository mongoDBRepository)
         {
+
             this.memoryCache = memoryCache;
             this.mongoDBRepository = mongoDBRepository;
-            
-            
+
+        }
+        public string GetHardware(string trainId)
+        {
+
+            var config = GetTrainConfigurationFromCache(trainId);
+            return config?.Hardware?.FirstOrDefault(x => x.Name == "YBS PC")?.ip;
+
         }
 
         public async Task<(string Ip, string Port)> GetLoggerServerConfigurationAsync(string TrainId)
@@ -55,18 +61,31 @@ namespace Tram34TCMSInterface.Infrastructure.Repositories.Cache
             }
         }
 
-        private TrainConfiguration? GetTrainConfigurationFromCache(string trainId)
+        //private TrainConfiguration? GetTrainConfigurationFromCache(string trainId)
+        //{
+        //    var cacheKey = CacheKeyPrefix + trainId; // Açılışta kaydettiğin TrainId'yi kullan
+
+        //    // Cache kontrolü
+        //    if (memoryCache.TryGetValue(cacheKey, out TrainConfiguration cachedConfig))
+        //    {
+        //        // logger.LogInformation("Train ID {TrainId} için konfigürasyon cache'ten alındı.", trainId);
+        //        return cachedConfig;
+        //    }
+
+        //    //logger.LogWarning("Train ID {TrainId} için cache'te konfigürasyon bulunamadı!", trainId);
+        //    return null;
+        //}
+
+        private TrainConfiguration? GetTrainConfigurationFromCache(string? trainId)
         {
-            var cacheKey = CacheKeyPrefix + trainId; // Açılışta kaydettiğin TrainId'yi kullan
+            if (string.IsNullOrWhiteSpace(trainId))
+                return null;
 
-            // Cache kontrolü
+            var cacheKey = CacheKeyPrefix + trainId;
+
             if (memoryCache.TryGetValue(cacheKey, out TrainConfiguration cachedConfig))
-            {
-                // logger.LogInformation("Train ID {TrainId} için konfigürasyon cache'ten alındı.", trainId);
                 return cachedConfig;
-            }
 
-            //logger.LogWarning("Train ID {TrainId} için cache'te konfigürasyon bulunamadı!", trainId);
             return null;
         }
 
@@ -76,9 +95,9 @@ namespace Tram34TCMSInterface.Infrastructure.Repositories.Cache
             {
                 if (string.IsNullOrEmpty(trainId))
                 {
-                    
 
                     return false;
+
                 }
 
                 var trainConfig = await mongoDBRepository.GetTrainConfigurationFromMongoDBAsync(trainId);
@@ -92,7 +111,7 @@ namespace Tram34TCMSInterface.Infrastructure.Repositories.Cache
                 }
                 else
                 {
-          
+
                     return false;
                 }
             }
@@ -102,7 +121,5 @@ namespace Tram34TCMSInterface.Infrastructure.Repositories.Cache
                 return false;
             }
         }
-
-
     }
 }

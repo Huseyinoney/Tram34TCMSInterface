@@ -112,9 +112,8 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
                     // PropertyNamingPolicy = JsonNamingPolicy.CamelCase  
                 });
 
-              
 
-                  byte[] bytes = Encoding.UTF8.GetBytes(jsonData + "\n"); // "\n" delimiter is optional
+                byte[] bytes = Encoding.UTF8.GetBytes(jsonData + "\n"); // "\n" delimiter is optional
                 //byte[] bytes = Encoding.UTF8.GetBytes(jsonData); // "\n" delimiter is optional
                 try
                 {
@@ -131,22 +130,6 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
             }
         }
 
-        //private async Task ConnectAsync(string ip, int port, CancellationToken token)
-        //{
-        //    try
-        //    {
-        //        _tcpClient?.Close();
-        //        _tcpClient = new TcpClient();
-
-        //        await _tcpClient.ConnectAsync(ip, port);
-        //        _stream = _tcpClient.GetStream();
-        //        Console.WriteLine("TCP bağlantısı kuruldu.");
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        Console.WriteLine($"Bağlantı hatası: {ex.Message}");
-        //    }
-        //}
         private async Task ConnectAsync(string ip, int port, CancellationToken token)
         {
             try

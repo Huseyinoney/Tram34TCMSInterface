@@ -6,18 +6,24 @@ using Tram34TCMSInterface.Application.Abstractions.CacheMemory;
 using Tram34TCMSInterface.Application.Abstractions.LogService;
 using Tram34TCMSInterface.Application.Abstractions.TCP;
 using Tram34TCMSInterface.Domain.Log;
-using static Tram34TCMSInterface.Domain.Models.JsonDocumentFormatUDP;
 using Tram34TCMSInterface.Infrastructure.RabbitMQ;
 using Microsoft.Extensions.Configuration;
+using Tram34TCMSInterface.Application.Abstractions.Common;
 
 namespace Tram34TCMSInterface.Infrastructure.Services.TCP
 {
     public class ReadDataFromTCMSWithTCP : IReadDataFromTCMSWithTCP
     {
+        private readonly IRabbitService rabbitService;
         private readonly ILogService logService;
         private readonly ILogFactory logFactory;
         private readonly IMongoDBTrainConfigurationCacheService mongoDBTrainConfigurationCacheService;
         private readonly IConfiguration configuration;
+        private readonly ITrainContext trainContext;
+
+
+        // private string? TrainIP;
+
 
         private readonly JsonSerializerOptions jsonSerializerOptions = new JsonSerializerOptions
         {
@@ -25,15 +31,16 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
-        public ReadDataFromTCMSWithTCP(IMongoDBTrainConfigurationCacheService mongoDBTrainConfigurationCacheService, ILogService logService, ILogFactory logFactory, IConfiguration configuration)
+        public ReadDataFromTCMSWithTCP(IMongoDBTrainConfigurationCacheService mongoDBTrainConfigurationCacheService, ILogService logService, ILogFactory logFactory, IConfiguration configuration, IRabbitService rabbitService, ITrainContext trainContext)
         {
 
             this.mongoDBTrainConfigurationCacheService = mongoDBTrainConfigurationCacheService;
             this.logService = logService;
             this.logFactory = logFactory;
             this.configuration = configuration;
+            this.rabbitService = rabbitService;
+            this.trainContext = trainContext;
         }
-
 
         //bu method kullanım dışı
         public async Task<byte[]> ReadDataFromTCMS(NetworkStream stream)
@@ -43,7 +50,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
             return buffer[..bytesRead];
         }
 
-        public TrainData ConvertByteArrayToJson(byte[] buffer)
+        public Domain.Models.JsonDocumentFormatUDP.TrainData ConvertByteArrayToJson(byte[] buffer)
         {
             try
             {
@@ -59,7 +66,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
                 // Console.WriteLine(jsonString);
                 // return JsonSerializer.Deserialize<TrainData>(jsonString, options);
                 var data = JsonSerializer.Deserialize<Domain.Models.JsonDocumentFormatUDP.TrainData>(jsonString, options);
-                 string jsonOutput = JsonSerializer.Serialize(data, jsonSerializerOptions);
+                string jsonOutput = JsonSerializer.Serialize(data, jsonSerializerOptions);
 
                 Console.WriteLine(jsonOutput);
 
@@ -68,7 +75,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
-                logService.SendLogAsync<ErrorLog>(logFactory.CreateErrorLog($"{ex.Message}", configuration["Log:TCMSSource"], "Software",""));
+                // logService.SendLogAsync<ErrorLog>(logFactory.CreateErrorLog($"{ex.Message}", configuration["Log:TCMSSource"], "Software",""));
                 return null;
             }
         }
@@ -77,7 +84,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
         private List<string> _previousCoupledTrainIds = new();
         private string _previousMasterTrainId = string.Empty;
 
-        public async Task<bool> SendCoupledDataToCoupleExchange(TrainData data)
+        public async Task<bool> SendCoupledDataToCoupleExchange(Domain.Models.JsonDocumentFormatUDP.TrainData data)
         {
             if (data == null /*|| !data.TRAIN.IsTrainCoupled*/)
                 return false;
@@ -112,13 +119,13 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
 
             string jsonOutput = JsonSerializer.Serialize(resultWithMasterTrain, jsonSerializerOptions);
 
-            bool isTrainChanged = !_previousTrainData.Any() || !AreTrainsEqual(currentTrain, _previousTrainData.First() as Train);
+            bool isTrainChanged = !_previousTrainData.Any() || !AreTrainsEqual(currentTrain, _previousTrainData.First() as Domain.Models.JsonDocumentFormatUDP.Train);
             bool isCoupledTrainIdsChanged = !_previousCoupledTrainIds.Any() || !AreCoupledTrainIdsEqual(coupledTrainIds, _previousCoupledTrainIds);
             bool isMasterTrainIdChanged = _previousMasterTrainId != masterTrainId;
 
             if (isTrainChanged || isCoupledTrainIdsChanged || isMasterTrainIdChanged)
             {
-                var result = await RabbitMQService.PublishMessage(
+                var result = await rabbitService.PublishMessage(
                     RabbitMQConstant.RabbitMQHost,
                     RabbitMQConstant.CoupledTrainsExchangeName,
                     "fanout",
@@ -130,9 +137,16 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
                 {
                     Console.WriteLine($" \nYeni veri gönderildi: \n {jsonOutput}\n");
                     mongoDBTrainConfigurationCacheService.SaveTrainInformationToCache(currentTrain.ID);
-                    logService.TrainId = currentTrain.ID;
-                    logService.SendLogAsync<EventLog>(
-                        logFactory.CreateEventLog("Kuplaj Bilgisi TCMS'ten Alındı", configuration["Log:TCMSSource"], "", "", ""));
+
+                    trainContext.TrainId = currentTrain.ID;
+
+                    trainContext.TrainIP = mongoDBTrainConfigurationCacheService.GetHardware(currentTrain.ID);
+
+                    if (Convert.ToBoolean(configuration["LogStatus:Event"]))
+                    {
+
+                        logService.SendLogAsync<EventLog>(logFactory.CreateEventLog($" {coupledTrainIds} Kuplaj Bilgisi TCMS'ten Alındı", configuration["Log:TCMSSource"], trainContext.TrainIP, configuration["Log:TCMSSource"], trainContext.TrainIP));
+                    }
                 }
 
                 _previousTrainData = new List<object> { currentTrain };
@@ -150,7 +164,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
             return currentIds.Count == previousIds.Count && currentIds.OrderBy(x => x).SequenceEqual(previousIds.OrderBy(x => x));
         }
 
-        private bool AreTrainsEqual(Train a, Train b)
+        private bool AreTrainsEqual(Domain.Models.JsonDocumentFormatUDP.Train a, Domain.Models.JsonDocumentFormatUDP.Train b)
         {
             return a.ID == b.ID &&
                    a.IP == b.IP &&
@@ -162,7 +176,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
                    a.IsTrainCoupled == b.IsTrainCoupled;
         }
 
-        public async Task<bool> SendTakoMeterPulseDataToTakoReadExchange(TrainData data)
+        public async Task<bool> SendTakoMeterPulseDataToTakoReadExchange(Domain.Models.JsonDocumentFormatUDP.TrainData data)
         {
             try
             {
@@ -185,7 +199,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
                     }
                 }, jsonSerializerOptions);
 
-                await RabbitMQService.PublishMessage(
+                await rabbitService.PublishMessage(
                     RabbitMQConstant.RabbitMQHost,
                     RabbitMQConstant.TakoReadExchangeName,
                     "fanout",
@@ -193,8 +207,11 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
                     pulseJson,
                     ManagementEnum.Live);
                 Console.WriteLine($"\nPulse değeri gönderildi: {pulseJson}\n");
-                logService.SendLogAsync<EventLog>(
-                       logFactory.CreateEventLog("Pulse Değeri TakoRead Kuyruğuna Gönderildi", configuration["Log:TCMSSource"], "","",""));
+                if (Convert.ToBoolean(configuration["LogStatus:Event"]))
+                {
+
+                    logService.SendLogAsync<EventLog>(logFactory.CreateEventLog($"Pulse Değeri {data.TachoMeterPulse} TakoRead Kuyruğuna Gönderildi", configuration["Log:TCMSSource"], trainContext.TrainIP, configuration["Log:TCMSSource"], trainContext.TrainIP));
+                }
                 return true;
             }
             catch

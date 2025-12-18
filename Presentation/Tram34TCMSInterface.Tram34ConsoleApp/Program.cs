@@ -2,17 +2,18 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Tram34TCMSInterface.Application.Abstractions.CacheMemory;
+using Tram34TCMSInterface.Application.Abstractions.Common;
 using Tram34TCMSInterface.Application.Abstractions.LogService;
 using Tram34TCMSInterface.Application.Abstractions.MongoDB;
 using Tram34TCMSInterface.Application.Abstractions.TCP;
-using Tram34TCMSInterface.Application.Abstractions.UDP;
-using Tram34TCMSInterface.Application.Features.ReadDataFromTCMS;
+using Tram34TCMSInterface.Application.Features.ReadDataFromTCMSWithTCP;
 using Tram34TCMSInterface.Infrastructure.BackgroundServices;
+using Tram34TCMSInterface.Infrastructure.Common;
 using Tram34TCMSInterface.Infrastructure.Log;
+using Tram34TCMSInterface.Infrastructure.RabbitMQ;
 using Tram34TCMSInterface.Infrastructure.Repositories.Cache;
 using Tram34TCMSInterface.Infrastructure.Services;
 using Tram34TCMSInterface.Infrastructure.Services.TCP;
-using Tram34TCMSInterface.Infrastructure.Services.UDP;
 
 using Tram34TCMSInterface.Persistence.MongoDBContext;
 
@@ -29,11 +30,12 @@ builder.Services.AddScoped<DBContextLog>(serviceProvider =>
     return new DBContextLog(connectionString, databaseName);
 });
 //Mediator
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<ReadDataFromTCMSHandler>());
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssemblyContaining<ReadDataFromTCMSWithTCPHandler>());
 
+builder.Services.AddSingleton<ITrainContext, TrainContext>();
 
 builder.Services.AddSingleton<IReadDataFromTCMSWithTCP, ReadDataFromTCMSWithTCP>();
-//builder.Services.AddSingleton<IReadDataFromTCMSWithUDP, ReadDataFromTCMSWithUDP>();
+
 builder.Services.AddSingleton<IMongoDBRepository, MongoDBRepository>();
 builder.Services.AddSingleton<IMongoDBTrainConfigurationCacheService, MongoDbTrainConfigurationCacheService>();
 builder.Services.AddSingleton<ILogFactory, LogFactory>();
@@ -42,15 +44,12 @@ builder.Services.AddSingleton<ILogService, LogService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddSingleton<HttpClient>();
 
-//Background Service
-//builder.Services.AddHostedService<ReadDataFromTCMSWithUDPBackgroundService>();
-//builder.Services.AddHostedService<UdpSenderBackgroundService>();
+builder.Services.AddSingleton<IRabbitService, RabbitService>();
 
 //TCP ile veri gönderme simule edilmeli !!!
 //builder.Services.AddHostedService<TCPSenderBackgroundService>();
 
 builder.Services.AddHostedService<ReadDataFromTCMSWithTCPBackgroundService>();
-
 
 using IHost host = builder.Build();
 await host.RunAsync();
