@@ -88,9 +88,9 @@ namespace Tram34TCMSInterface.Infrastructure.RabbitMQ
                 }
             }
 
-            var currentPCIp = mongoDBTrainConfigurationCacheService.GetHardware(trainContext.TrainId);
+          //  var currentPCIp = mongoDBTrainConfigurationCacheService.GetHardware(trainContext.TrainId);
             _logService.SendLogAsync<EventLog>(
-                _logFactory.CreateEventLog($"[RabbitMQ][{host}] RabbitMQ {host} bağlantısı yeniden oluşturuldu.", configuration["Log:TCMSSource"], currentPCIp, "RabbitMQ", host));
+                _logFactory.CreateEventLog($"[RabbitMQ][{host}] RabbitMQ {host} bağlantısı yeniden oluşturuldu.", configuration["Log:TCMSSource"], "RabbitMQ"));
 
             await Task.CompletedTask;
         }
@@ -100,8 +100,8 @@ namespace Tram34TCMSInterface.Infrastructure.RabbitMQ
         {
             Console.WriteLine($"{host} için RabbitMQ bağlantısı yeniden bağlanıyor... {@event.Exception.Message}");
 
-            var currentPCIp = mongoDBTrainConfigurationCacheService.GetHardware(trainContext.TrainId);// bulunduğu trenin ybs pc ipsi
-            _logService.SendLogAsync(_logFactory.CreateErrorLog($"[ConnectionRecoveryError][RabbitMQ][{host}] RabbitMQ'da {host} için yeniden bağlanmayı deniyor.", configuration["Log:TCMSSource"], "Software", currentPCIp));
+            //var currentPCIp = mongoDBTrainConfigurationCacheService.GetHardware(trainContext.TrainId);// bulunduğu trenin ybs pc ipsi
+            _logService.SendLogAsync(_logFactory.CreateErrorLog($"[ConnectionRecoveryError][RabbitMQ][{host}] RabbitMQ'da {host} için yeniden bağlanmayı deniyor.", configuration["Log:TCMSSource"], "Software"));
 
             await Task.CompletedTask;
         }
@@ -110,8 +110,8 @@ namespace Tram34TCMSInterface.Infrastructure.RabbitMQ
         {
             Console.WriteLine($"{host} için RabbitMQ bağlantısı kesildi... {@event.ReplyText}");
 
-            var currentPCIp = mongoDBTrainConfigurationCacheService.GetHardware(trainContext.TrainId);// bulunduğu trenin ybs pc ipsi
-            _logService.SendLogAsync(_logFactory.CreateErrorLog($"[ConnectionShutdown][RabbitMQ][{host}] RabbitMQ'da {host} için bağlantı kesildi.", configuration["Log:TCMSSource"], "Software", currentPCIp));
+           // var currentPCIp = mongoDBTrainConfigurationCacheService.GetHardware(trainContext.TrainId);// bulunduğu trenin ybs pc ipsi
+            _logService.SendLogAsync(_logFactory.CreateErrorLog($"[ConnectionShutdown][RabbitMQ][{host}] RabbitMQ'da {host} için bağlantı kesildi.", configuration["Log:TCMSSource"], "Software"));
 
             await Task.CompletedTask;
         }
@@ -152,8 +152,8 @@ namespace Tram34TCMSInterface.Infrastructure.RabbitMQ
                 catch (Exception ex)
                 {
                     Console.WriteLine($"{host} için ilk bağlantı hatası ({attempt}. deneme): {ex.Message}");
-                    var currentPCIp = mongoDBTrainConfigurationCacheService.GetHardware(trainContext.TrainId);// bulunduğu trenin ybs pc ipsi
-                    _logService.SendLogAsync(_logFactory.CreateErrorLog($"[BrokerUnreachableException][RabbitMQ][{host}] RabbitMQ {host}'a bağlanamadı.", configuration["Log:TCMSSource"], "Software", currentPCIp));
+                  //  var currentPCIp = mongoDBTrainConfigurationCacheService.GetHardware(trainContext.TrainId);// bulunduğu trenin ybs pc ipsi
+                    _logService.SendLogAsync(_logFactory.CreateErrorLog($"[BrokerUnreachableException][RabbitMQ][{host}] RabbitMQ {host}'a bağlanamadı.", configuration["Log:TCMSSource"], "Software"));
 
                     await Task.Delay(TimeSpan.FromSeconds(5));
                 }
@@ -207,9 +207,9 @@ namespace Tram34TCMSInterface.Infrastructure.RabbitMQ
                     .Select(kvp => kvp.Key)
                     .FirstOrDefault();
 
-                    var currentPCIp = mongoDBTrainConfigurationCacheService.GetHardware(trainContext.TrainId);// bulunduğu trenin ybs pc ipsi
+                  //  var currentPCIp = mongoDBTrainConfigurationCacheService.GetHardware(trainContext.TrainId);// bulunduğu trenin ybs pc ipsi
                     Console.WriteLine($"[JsonException][RabbitMQ][{host}] RabbitMQ {consumer.Channel.CurrentQueue} kuyruğuna yanlış türde veri geldi.");
-                    _logService.SendLogAsync(_logFactory.CreateErrorLog($"[JsonException][RabbitMQ][{host}] RabbitMQ {consumer.Channel.CurrentQueue} kuyruğuna yanlış türde veri geldi.", configuration["Log:TCMSSource"], "Software", currentPCIp));
+                    _logService.SendLogAsync(_logFactory.CreateErrorLog($"[JsonException][RabbitMQ][{host}] RabbitMQ {consumer.Channel.CurrentQueue} kuyruğuna yanlış türde veri geldi.", configuration["Log:TCMSSource"], "Software"));
 
                 }
             };
@@ -269,8 +269,8 @@ namespace Tram34TCMSInterface.Infrastructure.RabbitMQ
             }
             catch (Exception ex)
             {
-                var currentPCIp = mongoDBTrainConfigurationCacheService.GetHardware(trainContext.TrainId);// bulunduğu trenin ybs pc ipsi
-                _logService.SendLogAsync(_logFactory.CreateErrorLog($"[{ex.GetType().Name}][RabbitMQ][{host}] RabbitMQ {host} -> {queueName} kuyruğuna bağlanırken bir hata oluştu.", configuration["Log:TCMSSource"], "Software", currentPCIp));
+              //  var currentPCIp = mongoDBTrainConfigurationCacheService.GetHardware(trainContext.TrainId);// bulunduğu trenin ybs pc ipsi
+                _logService.SendLogAsync(_logFactory.CreateErrorLog($"[{ex.GetType().Name}][RabbitMQ][{host}] RabbitMQ {host} -> {queueName} kuyruğuna bağlanırken bir hata oluştu.", configuration["Log:TCMSSource"], "Software"));
 
                 _channelConfigurations[host].Lost.Add(new ChannelConfiguration<T>(host, exchangeName, exchangeType, queueName, routingKey, management, act, channel));
                 Console.WriteLine("Hata oluştu :" + ex.Message);
@@ -279,7 +279,7 @@ namespace Tram34TCMSInterface.Infrastructure.RabbitMQ
 
         public async Task<bool> PublishMessage(string host, string exchangeName, string exchangeType, string routingKey, object obj, ManagementEnum management, CancellationToken cancellationToken = default)
         {
-            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+            using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
             try
@@ -297,9 +297,9 @@ namespace Tram34TCMSInterface.Infrastructure.RabbitMQ
 
                 /*_logService.SendLogAsync<InformationLog>(_logFactory.CreateInformationLog($"[RabbitMQ][{host}]. RabbitMQ {host} -> {exchangeName} exchange'ine veri gönderildi.", "HMIController"));*/
 
-                var currentPCIp = mongoDBTrainConfigurationCacheService.GetHardware(trainContext.TrainId);
+               // var currentPCIp = mongoDBTrainConfigurationCacheService.GetHardware(trainContext.TrainId);
                 _logService.SendLogAsync<EventLog>(
-                    _logFactory.CreateEventLog($"[RabbitMQ][{host}]. RabbitMQ {host} -> {exchangeName} exchange'ine veri gönderildi.", configuration["Log:TCMSSource"], currentPCIp, "RabbitMQ", host));
+                    _logFactory.CreateEventLog($"[RabbitMQ][{host}]. RabbitMQ {host} -> {exchangeName} exchange'ine veri gönderildi.", configuration["Log:TCMSSource"], "RabbitMQ"));
 
 
                 return true;
@@ -307,8 +307,8 @@ namespace Tram34TCMSInterface.Infrastructure.RabbitMQ
             catch (OperationCanceledException ex)
             {
                 Console.WriteLine("Publish işlemi 1 saniyeyi geçti ve iptal edildi.");
-                var currentPCIp = mongoDBTrainConfigurationCacheService.GetHardware(trainContext.TrainId);// bulunduğu trenin ybs pc ipsi
-                _logService.SendLogAsync(_logFactory.CreateErrorLog($"[OperationCanceledException][RabbitMQ][{host}] RabbitMQ {host} -> {exchangeName} exchange'ine veri gönderilemedi.", configuration["Log:TCMSSource"], "Software", currentPCIp));
+               // var currentPCIp = mongoDBTrainConfigurationCacheService.GetHardware(trainContext.TrainId);// bulunduğu trenin ybs pc ipsi
+                _logService.SendLogAsync(_logFactory.CreateErrorLog($"[OperationCanceledException][RabbitMQ][{host}] RabbitMQ {host} -> {exchangeName} exchange'ine veri gönderilemedi.", configuration["Log:TCMSSource"], "Software"));
 
                 return false;
             }
@@ -316,8 +316,8 @@ namespace Tram34TCMSInterface.Infrastructure.RabbitMQ
             {
 
                 Console.WriteLine($"[{host}] -> [{exchangeName}] Mesaj gönderilirken hata oluştu: " + ex.Message);
-                var currentPCIp = mongoDBTrainConfigurationCacheService.GetHardware(trainContext.TrainId);// bulunduğu trenin ybs pc ipsi
-                _logService.SendLogAsync(_logFactory.CreateErrorLog($"[{ex.GetType().Name}][RabbitMQ][{host}] RabbitMQ {host} -> {exchangeName} exchange'ine veri gönderilemedi.", configuration["Log:TCMSSource"], "Software", currentPCIp));
+              //  var currentPCIp = mongoDBTrainConfigurationCacheService.GetHardware(trainContext.TrainId);// bulunduğu trenin ybs pc ipsi
+                _logService.SendLogAsync(_logFactory.CreateErrorLog($"[{ex.GetType().Name}][RabbitMQ][{host}] RabbitMQ {host} -> {exchangeName} exchange'ine veri gönderilemedi.", configuration["Log:TCMSSource"], "Software"));
 
                 if (management == ManagementEnum.LastMessage)
                 {

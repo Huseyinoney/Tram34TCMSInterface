@@ -1,5 +1,6 @@
 ﻿using MediatR;
 using Microsoft.Extensions.Configuration;
+using System.Net;
 using Tram34TCMSInterface.Application.Abstractions.TCP;
 using Tram34TCMSInterface.Domain.Models;
 
@@ -34,15 +35,34 @@ namespace Tram34TCMSInterface.Application.Features.ReadDataFromTCMSWithTCP
 
         }
 
-        private static (string, int) GetTcpConfiguration(IConfiguration configuration)
+        private (string, int) GetTcpConfiguration(IConfiguration configuration)
         {
             var ip = configuration["TCP:AddressToClient"];
             var port = int.TryParse(configuration["TCP:LocalPort"], out int parsedPort) ? parsedPort : 0;
             return (ip, port);
         }
-        private bool IsExpectedSender(System.Net.IPEndPoint senderEndPoint)
+        //private bool IsExpectedSender(System.Net.IPEndPoint senderEndPoint)
+        //{
+        //    var a = senderEndPoint.Address.ToString() == _expectedIp;
+        //    return a/*&& senderEndPoint.Port == _expectedPort*/;
+        //}
+
+        private bool IsExpectedSender(IPEndPoint senderEndPoint)
         {
-            return senderEndPoint.Address.ToString() == _expectedIp /*&& senderEndPoint.Port == _expectedPort*/;
+            if (!IPAddress.TryParse(_expectedIp, out var expectedIp))
+                return false;
+
+            var senderIp = senderEndPoint.Address;
+
+            // IPv6-mapped IPv4 → IPv4'e çevir
+            if (senderIp.IsIPv4MappedToIPv6)
+                senderIp = senderIp.MapToIPv4();
+
+            if (expectedIp.IsIPv4MappedToIPv6)
+                expectedIp = expectedIp.MapToIPv4();
+
+            return senderIp.Equals(expectedIp);
         }
+
     }
 }

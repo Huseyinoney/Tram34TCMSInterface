@@ -48,7 +48,7 @@ builder.Services.AddSingleton<IRabbitService, RabbitService>();
 
 //TCP ile veri gönderme simule edilmeli !!!
 //builder.Services.AddHostedService<TCPSenderBackgroundService>();
-
+builder.Services.AddHostedService<IAMALIVE>();
 builder.Services.AddHostedService<ReadDataFromTCMSWithTCPBackgroundService>();
 
 using IHost host = builder.Build();

@@ -15,16 +15,8 @@ namespace Tram34TCMSInterface.Infrastructure.Services
 
         public async Task<TrainConfiguration?> GetTrainConfigurationFromMongoDBAsync(string trainId)
         {
-            try
-            {
-                var filter = Builders<TrainConfiguration>.Filter.Eq(x => x.TrainId, trainId);
-                return await dbContextLog.Log.Find(filter).FirstOrDefaultAsync();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-                return null;
-            }
+            var filter = Builders<TrainConfiguration>.Filter.Eq(x => x.TrainId, trainId);
+            return await dbContextLog.Log.Find(filter).FirstOrDefaultAsync();
         }
     }
 }
