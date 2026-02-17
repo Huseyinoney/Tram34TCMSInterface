@@ -8,7 +8,9 @@ using Tram34TCMSInterface.Application.Abstractions.CacheMemory;
 using Tram34TCMSInterface.Application.Abstractions.LogService;
 using Tram34TCMSInterface.Application.Abstractions.MongoDB;
 using Tram34TCMSInterface.Application.Abstractions.UDP;
+using Tram34TCMSInterface.Application.Common;
 using Tram34TCMSInterface.Domain.Log;
+using Tram34TCMSInterface.Infrastructure.Common;
 using Tram34TCMSInterface.Infrastructure.RabbitMQ;
 using static Tram34TCMSInterface.Domain.Models.JsonDocumentFormatUDP;
 
@@ -18,6 +20,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
     {
         private readonly ILogService logService;
         private readonly ILogFactory logFactory;
+        private readonly ITrainContext trainContext;
         private readonly UdpClient udpClient;
         private readonly IConfiguration _configuration;
         private readonly IMongoDBTrainConfigurationCacheService mongoDBTrainConfigurationCacheService;
@@ -30,7 +33,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
-        public ReadDataFromTCMSWithUDP(IConfiguration configuration, IMongoDBTrainConfigurationCacheService mongoDBTrainConfigurationCacheService, ILogService logService, ILogFactory logFactory)
+        public ReadDataFromTCMSWithUDP(IConfiguration configuration, IMongoDBTrainConfigurationCacheService mongoDBTrainConfigurationCacheService, ILogService logService, ILogFactory logFactory, ITrainContext trainContext)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             if (!int.TryParse(_configuration["UDP:Port"], out int port))
@@ -42,6 +45,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
             this.mongoDBTrainConfigurationCacheService = mongoDBTrainConfigurationCacheService;
             this.logService = logService;
             this.logFactory = logFactory;
+            this.trainContext = trainContext;
         }
 
         // Asenkron veri okuma işlemi
@@ -175,10 +179,10 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
 
                     if (result)
                     {
-                        mongoDBTrainConfigurationCacheService.SaveTrainInformationToCache(currentTrain.ID);
-                        logService.TrainId = currentTrain.ID;
-                         logService.SendLogAsync<EventLog>(
-                            logFactory.CreateEventLog("Kuplaj Bilgisi TCMS'ten Alındı", "TCMSInterface", "", "", "")
+                      await  mongoDBTrainConfigurationCacheService.SaveTrainInformationToCache(currentTrain.ID);
+                        trainContext.TrainId = currentTrain.ID;
+                        logService.SendLogAsync<EventLog>(
+                            logFactory.CreateEventLog("Kuplaj Bilgisi TCMS'ten Alındı", "TCMSInterface", "")
                         );
                     }
 
