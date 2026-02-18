@@ -3,7 +3,7 @@ using Tram34TCMSInterface.Application.Abstractions.CacheMemory;
 using Tram34TCMSInterface.Domain.Log;
 using Tram34TCMSInterface.Application.Abstractions.MongoDB;
 
-namespace Tram34TCMSInterface.Infrastructure.Repositories.Cache
+namespace Tram34TCMSInterface.Infrastructure.Services.MongoDB
 {
     public class MongoDbTrainConfigurationCacheService : IMongoDBTrainConfigurationCacheService
     {

@@ -339,7 +339,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
                     var masterTrainId = data.MasterTrainId;
                     var currentTrain = data.TRAIN;
 
-                    // ✅ HER ZAMAN CONTEXT SET
+                    //  HER ZAMAN CONTEXT SET
 
                     var coupledTrainIds = new[]
                     {
@@ -349,7 +349,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
                 data.CouplingTrainsId.CouplingTrainsIdXX4
             }
                     .Where(x => !string.IsNullOrEmpty(x))
-                    .OrderBy(x => x)              // 🔥 kritik
+                    .OrderBy(x => x)              //  kritik
                     .ToList();
 
                     bool changed =
@@ -406,7 +406,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
                                configuration["Log:TCMSSource"]));
                     }
 
-                    // ✅ SNAPSHOT (REFERANS BUG YOK)
+                    // SNAPSHOT (REFERANS BUG YOK)
                     _previousTrain = new Domain.Models.JsonDocumentFormatUDP.Train
                     {
                         ID = currentTrain.ID,
@@ -486,12 +486,12 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
 
         // --------------------------------------------------------------------
 
-        private static bool AreCoupledTrainIdsEqual(List<string> a, List<string> b)
+        private  bool AreCoupledTrainIdsEqual(List<string> a, List<string> b)
         {
             return a.Count == b.Count && a.OrderBy(x => x).SequenceEqual(b.OrderBy(x => x));
         }
 
-        private static bool AreTrainsEqual(
+        private  bool AreTrainsEqual(
             Domain.Models.JsonDocumentFormatUDP.Train a,
             Domain.Models.JsonDocumentFormatUDP.Train b)
         {

@@ -3,7 +3,7 @@ using Tram34TCMSInterface.Application.Abstractions.MongoDB;
 using Tram34TCMSInterface.Domain.Log;
 using Tram34TCMSInterface.Persistence.MongoDBContext;
 
-namespace Tram34TCMSInterface.Infrastructure.Services
+namespace Tram34TCMSInterface.Infrastructure.Services.MongoDB
 {
     public class MongoDBRepository : IMongoDBRepository
     {

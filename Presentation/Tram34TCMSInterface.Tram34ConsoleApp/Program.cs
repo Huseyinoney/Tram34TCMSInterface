@@ -11,8 +11,7 @@ using Tram34TCMSInterface.Infrastructure.BackgroundServices;
 using Tram34TCMSInterface.Infrastructure.Common;
 using Tram34TCMSInterface.Infrastructure.Log;
 using Tram34TCMSInterface.Infrastructure.RabbitMQ;
-using Tram34TCMSInterface.Infrastructure.Repositories.Cache;
-using Tram34TCMSInterface.Infrastructure.Services;
+using Tram34TCMSInterface.Infrastructure.Services.MongoDB;
 using Tram34TCMSInterface.Infrastructure.Services.TCP;
 
 using Tram34TCMSInterface.Persistence.MongoDBContext;
