@@ -349,7 +349,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
                 data.CouplingTrainsId.CouplingTrainsIdXX4
             }
                     .Where(x => !string.IsNullOrEmpty(x))
-                    .OrderBy(x => x)              //  kritik
+                   // .OrderBy(x => x)              //  kritik
                     .ToList();
 
                     bool changed =

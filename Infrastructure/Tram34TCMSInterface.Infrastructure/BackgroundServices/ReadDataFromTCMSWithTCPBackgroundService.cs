@@ -476,6 +476,7 @@
 //        }
 //    }
 //}
+
 using MediatR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
@@ -491,6 +492,7 @@ using Tram34TCMSInterface.Application.Features.SendCoupledDataToCoupleExchangeFr
 using Tram34TCMSInterface.Application.Abstractions.LogService;
 using Tram34TCMSInterface.Domain.Models;
 using Tram34TCMSInterface.Application.Features.SendTakoMeterPulseDataToTakoReadExchangeFromTCMS;
+using System.Threading.Channels;
 
 namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
 {
@@ -502,6 +504,11 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
 
         private TcpClient? client;
         private NetworkStream? stream;
+        private readonly SemaphoreSlim _writeLock = new(1, 1);
+
+
+
+
 
         private const int HEADER_SIZE = 4;
         private const int MAX_MESSAGE = 1500;
@@ -530,14 +537,21 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
                     Console.WriteLine("[TCP] Connecting...");
                     client = new TcpClient(AddressFamily.InterNetwork);
                     await client.ConnectAsync(ip, port, stoppingToken);
+                    var processingChannel =
+    Channel.CreateBounded<byte[]>(new BoundedChannelOptions(100)
+    {
+        FullMode = BoundedChannelFullMode.Wait
+    });
+
+
                     stream = client.GetStream();
 
                     Console.WriteLine("[TCP] Connected");
 
                     using var cts =
                         CancellationTokenSource.CreateLinkedTokenSource(stoppingToken);
-
-                    var readTask = HandleReadAsync(stream, cts.Token);
+                    var processorTask = ProcessChannelAsync(processingChannel, cts.Token); //sonradan ekledik
+                    var readTask = HandleReadAsync(stream, processingChannel, cts.Token);
                     var writeTask = HandleWriteAsync(stream, cts.Token);
 
                     await Task.WhenAny(readTask, writeTask);
@@ -545,7 +559,8 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
 
                     await Task.WhenAll(
                         readTask.ContinueWith(_ => { }),
-                        writeTask.ContinueWith(_ => { })
+                        writeTask.ContinueWith(_ => { }),
+                         processorTask.ContinueWith(_ => { }) //sonradan ekledik
                     );
                 }
                 catch (Exception ex)
@@ -565,6 +580,7 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
 
         private async Task HandleReadAsync(
             NetworkStream stream,
+             Channel<byte[]> channel,
             CancellationToken token)
         {
             Console.WriteLine("[TCP][READ] Started");
@@ -611,13 +627,29 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
 
                     Console.WriteLine($"[TCP][READ] Frame OK len={len}");
 
-                    _ = SafeProcessAsync(
-                        payload,
-                        client?.Client.RemoteEndPoint as IPEndPoint,
-                        token);
+                    //_ = SafeProcessAsync(
+                    //    payload,
+                    //    client?.Client.RemoteEndPoint as IPEndPoint,
+                    //    token);
+
+                    await channel.Writer.WriteAsync(payload, token); // sonradan ekledik
+
                 }
             }
         }
+
+        private async Task ProcessChannelAsync(Channel<byte[]> channel,CancellationToken token)
+        {
+            await foreach (var payload in channel.Reader.ReadAllAsync(token))
+            {
+                await SafeProcessAsync(
+                    payload,
+                    client?.Client.RemoteEndPoint as IPEndPoint,
+                    token);
+            }
+        }
+
+
 
         // ===================== RESYNC =====================
 
@@ -759,8 +791,20 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
 
                     packet[^1] = NEWLINE;
 
-                    await stream.WriteAsync(packet, cancellationToken);
-                    await stream.FlushAsync(cancellationToken);
+                    //await stream.WriteAsync(packet, cancellationToken);
+                    //await stream.FlushAsync(cancellationToken);
+
+                    await _writeLock.WaitAsync(cancellationToken);
+                    try
+                    {
+                        await stream.WriteAsync(packet, cancellationToken);
+                        await stream.FlushAsync(cancellationToken);
+                    }
+                    finally
+                    {
+                        _writeLock.Release();
+                    }
+
 
                     Console.WriteLine($"[TCP][WRITE] Sent {body.Length} bytes");
                     Console.WriteLine($"[TCP][WRITE][JSON] {json}");
