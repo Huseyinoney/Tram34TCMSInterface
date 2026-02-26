@@ -486,11 +486,24 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
 
         // --------------------------------------------------------------------
 
-        private  bool AreCoupledTrainIdsEqual(List<string> a, List<string> b)
+        private bool AreCoupledTrainIdsEqual(List<string> a, List<string> b)
         {
-            return a.Count == b.Count && a.OrderBy(x => x).SequenceEqual(b.OrderBy(x => x));
-        }
+            a ??= new List<string>();
+            b ??= new List<string>();
 
+            // Eğer eleman sayısı farklıysa değişmiş demektir
+            if (a.Count != b.Count)
+                return false;
+
+            // Elemanlar aynı mı kontrol et (sıra önemli)
+            for (int i = 0; i < a.Count; i++)
+            {
+                if (a[i] != b[i])
+                    return false; // Sıra veya eleman değişmiş
+            }
+
+            return true; // Elemanlar ve sıra tamamen aynı
+        }
         private  bool AreTrainsEqual(
             Domain.Models.JsonDocumentFormatUDP.Train a,
             Domain.Models.JsonDocumentFormatUDP.Train b)
