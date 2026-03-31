@@ -178,7 +178,10 @@ namespace Tram34TCMSInterface.Infrastructure.RabbitMQ
                 try
                 {
                     byte[] body = ea.Body.ToArray();
+
                     string message = Encoding.UTF8.GetString(body);
+                    Console.WriteLine($"RAW MESSAGE: {message}");
+                    Console.WriteLine($"BODY LENGTH: {body.Length}");
                     T? data = JsonSerializer.Deserialize<T>(message);
 
                     if (data != null)

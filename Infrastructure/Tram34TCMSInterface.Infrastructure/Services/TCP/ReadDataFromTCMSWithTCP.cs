@@ -292,6 +292,31 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
 
         // --------------------------------------------------------------------
 
+        //public Domain.Models.JsonDocumentFormatUDP.TrainData ConvertByteArrayToJson(byte[] buffer)
+        //{
+        //    try
+        //    {
+        //        string jsonString = Encoding.UTF8.GetString(buffer);
+
+        //        var options = new JsonSerializerOptions
+        //        {
+        //            PropertyNameCaseInsensitive = false,
+        //            AllowTrailingCommas = false,
+        //            ReadCommentHandling = JsonCommentHandling.Disallow,
+        //            DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+        //        };
+
+        //        return JsonSerializer.Deserialize<
+        //            Domain.Models.JsonDocumentFormatUDP.TrainData>(jsonString, options);
+        //    }
+        //    catch
+        //    {
+        //        // parse edilemeyen veri çöpe
+        //        return null;
+        //    }
+        //}
+
+
         public Domain.Models.JsonDocumentFormatUDP.TrainData ConvertByteArrayToJson(byte[] buffer)
         {
             try
@@ -306,15 +331,29 @@ namespace Tram34TCMSInterface.Infrastructure.Services.TCP
                     DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
                 };
 
-                return JsonSerializer.Deserialize<
-                    Domain.Models.JsonDocumentFormatUDP.TrainData>(jsonString, options);
+                var data = JsonSerializer.Deserialize<Domain.Models.JsonDocumentFormatUDP.TrainData>(jsonString, options);
+
+                // kritik alanlar null veya boşsa geçersiz kabul et
+                if (data == null ||
+                    string.IsNullOrEmpty(data.MasterTrainId) ||
+                    data.TRAIN == null ||
+                    string.IsNullOrEmpty(data.TRAIN.ID))
+                {
+                    Console.WriteLine("Geçersiz JSON: masterTrainId veya currentTrain.ID null/boş, atıldı.");
+                    return null;
+                }
+
+                return data;
             }
-            catch
+            catch (Exception ex)
             {
-                // parse edilemeyen veri çöpe
+                Console.WriteLine($"JSON parse hatası: {ex.Message}");
                 return null;
             }
         }
+
+
+
 
         // --------------------------------------------------------------------
 

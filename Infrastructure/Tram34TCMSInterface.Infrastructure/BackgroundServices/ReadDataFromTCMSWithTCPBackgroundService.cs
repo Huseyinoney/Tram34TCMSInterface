@@ -598,6 +598,44 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
 
                 Console.WriteLine($"[TCP][READ] {read} bytes, buffer={buffer.Count}");
 
+                //while (true)
+                //{
+                //    if (buffer.Count < HEADER_SIZE)
+                //        break;
+
+                //    int len = BinaryPrimitives.ReadInt32BigEndian(
+                //        CollectionsMarshal.AsSpan(buffer).Slice(0, HEADER_SIZE));
+
+                //    if (len <= 0 || len > MAX_MESSAGE)
+                //    {
+                //        Console.WriteLine($"[TCP][READ][RESYNC] Invalid len={len}");
+                //        ResyncToHeader(buffer);
+                //        continue;
+                //    }
+
+                //    if (buffer.Count < HEADER_SIZE + len)
+                //        break;
+
+                //    byte[] payload = buffer
+                //        .GetRange(HEADER_SIZE, len)
+                //        .ToArray();
+
+                //    buffer.RemoveRange(0, HEADER_SIZE + len);
+
+                //    if (buffer.Count > 0 && buffer[0] == NEWLINE)
+                //        buffer.RemoveAt(0);
+
+                //    Console.WriteLine($"[TCP][READ] Frame OK len={len}");
+
+                //    //_ = SafeProcessAsync(
+                //    //    payload,
+                //    //    client?.Client.RemoteEndPoint as IPEndPoint,
+                //    //    token);
+
+                //    await channel.Writer.WriteAsync(payload, token); // sonradan ekledik
+
+                //}
+
                 while (true)
                 {
                     if (buffer.Count < HEADER_SIZE)
@@ -608,33 +646,33 @@ namespace Tram34TCMSInterface.Infrastructure.BackgroundServices
 
                     if (len <= 0 || len > MAX_MESSAGE)
                     {
-                        Console.WriteLine($"[TCP][READ][RESYNC] Invalid len={len}");
                         ResyncToHeader(buffer);
                         continue;
                     }
 
-                    if (buffer.Count < HEADER_SIZE + len)
+                    int total = HEADER_SIZE + len + 1;
+
+                    if (buffer.Count < total)
                         break;
+
+                    // newline kontrol
+                    if (buffer[HEADER_SIZE + len] != NEWLINE)
+                    {
+                        Console.WriteLine("[TCP][READ] NEWLINE ERROR → RESYNC");
+                        buffer.RemoveAt(0);
+                        continue;
+                    }
 
                     byte[] payload = buffer
                         .GetRange(HEADER_SIZE, len)
                         .ToArray();
 
-                    buffer.RemoveRange(0, HEADER_SIZE + len);
+                    buffer.RemoveRange(0, total);
 
-                    if (buffer.Count > 0 && buffer[0] == NEWLINE)
-                        buffer.RemoveAt(0);
-
-                    Console.WriteLine($"[TCP][READ] Frame OK len={len}");
-
-                    //_ = SafeProcessAsync(
-                    //    payload,
-                    //    client?.Client.RemoteEndPoint as IPEndPoint,
-                    //    token);
-
-                    await channel.Writer.WriteAsync(payload, token); // sonradan ekledik
-
+                    await channel.Writer.WriteAsync(payload, token);
                 }
+
+
             }
         }
 
