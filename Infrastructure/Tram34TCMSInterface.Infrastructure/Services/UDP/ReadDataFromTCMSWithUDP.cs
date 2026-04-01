@@ -4,13 +4,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Tram34TCMSInterface.Application.Abstractions.CacheMemory;
-using Tram34TCMSInterface.Application.Abstractions.LogService;
-using Tram34TCMSInterface.Application.Abstractions.MongoDB;
 using Tram34TCMSInterface.Application.Abstractions.UDP;
-using Tram34TCMSInterface.Application.Common;
-using Tram34TCMSInterface.Domain.Log;
-using Tram34TCMSInterface.Infrastructure.Common;
 using Tram34TCMSInterface.Infrastructure.RabbitMQ;
 using static Tram34TCMSInterface.Domain.Models.JsonDocumentFormatUDP;
 
@@ -18,12 +12,11 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
 {
     public class ReadDataFromTCMSWithUDP : IReadDataFromTCMSWithUDP
     {
-        private readonly ILogService logService;
-        private readonly ILogFactory logFactory;
-        private readonly ITrainContext trainContext;
+        
+        
         private readonly UdpClient udpClient;
         private readonly IConfiguration _configuration;
-        private readonly IMongoDBTrainConfigurationCacheService mongoDBTrainConfigurationCacheService;
+      
         private readonly SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
         private List<object> _previousTrainData = new(); // Önceki veriyi saklamak için
 
@@ -33,7 +26,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase
         };
 
-        public ReadDataFromTCMSWithUDP(IConfiguration configuration, IMongoDBTrainConfigurationCacheService mongoDBTrainConfigurationCacheService, ILogService logService, ILogFactory logFactory, ITrainContext trainContext)
+        public ReadDataFromTCMSWithUDP(IConfiguration configuration)
         {
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
             if (!int.TryParse(_configuration["UDP:Port"], out int port))
@@ -42,10 +35,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
             }
 
             udpClient = new UdpClient(port);
-            this.mongoDBTrainConfigurationCacheService = mongoDBTrainConfigurationCacheService;
-            this.logService = logService;
-            this.logFactory = logFactory;
-            this.trainContext = trainContext;
+          
         }
 
         // Asenkron veri okuma işlemi
@@ -163,7 +153,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                 string jsonOutput = JsonSerializer.Serialize(resultWithMasterTrain, jsonSerializerOptions);
 
                 // Eski veri ile karşılaştırma
-                bool isEqual = AreTrainsEqual(currentTrain, previousTrainState?.Train, coupledTrainIds, previousTrainState?.CoupledIds);
+                bool isEqual = false;//= AreTrainsEqual(currentTrain, previousTrainState?.Train, coupledTrainIds, previousTrainState?.CoupledIds);
 
                 if (!isEqual)
                 {
@@ -177,14 +167,6 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                         ManagementEnum.Live
                     );
 
-                    if (result)
-                    {
-                      await  mongoDBTrainConfigurationCacheService.SaveTrainInformationToCache(currentTrain.ID);
-                        trainContext.TrainId = currentTrain.ID;
-                        logService.SendLogAsync<EventLog>(
-                            logFactory.CreateEventLog("Kuplaj Bilgisi TCMS'ten Alındı", "TCMSInterface", "")
-                        );
-                    }
 
                     // Yeni state’i kaydet
                     previousTrainState = new PreviousTrainState
@@ -258,8 +240,8 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
         {
            //_configuration["RabbitMQ:TrainHosts:0"],
            _configuration["RabbitMQ:TrainHosts:0"],
-           _configuration["RabbitMQ:TrainHosts:1"],
-           _configuration["RabbitMQ:TrainHosts:2"]
+         //  _configuration["RabbitMQ:TrainHosts:1"],
+         //  _configuration["RabbitMQ:TrainHosts:2"]
 
         };
 
