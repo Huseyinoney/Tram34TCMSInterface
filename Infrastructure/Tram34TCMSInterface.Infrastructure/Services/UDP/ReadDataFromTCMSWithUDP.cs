@@ -153,7 +153,7 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                 string jsonOutput = JsonSerializer.Serialize(resultWithMasterTrain, jsonSerializerOptions);
 
                 // Eski veri ile karşılaştırma
-                bool isEqual = false;//= AreTrainsEqual(currentTrain, previousTrainState?.Train, coupledTrainIds, previousTrainState?.CoupledIds);
+                bool isEqual = AreTrainsEqual(currentTrain, previousTrainState?.Train, coupledTrainIds, previousTrainState?.CoupledIds);
 
                 if (!isEqual)
                 {
@@ -238,10 +238,10 @@ namespace Tram34TCMSInterface.Infrastructure.Services.UDP
                 // RabbitMQ host listesi
                 var rabbitHosts = new List<string>
         {
-           //_configuration["RabbitMQ:TrainHosts:0"],
            _configuration["RabbitMQ:TrainHosts:0"],
-         //  _configuration["RabbitMQ:TrainHosts:1"],
-         //  _configuration["RabbitMQ:TrainHosts:2"]
+           _configuration["RabbitMQ:TrainHosts:1"],
+           _configuration["RabbitMQ:TrainHosts:2"],
+           _configuration["RabbitMQ:TrainHosts:3"]
 
         };
 
